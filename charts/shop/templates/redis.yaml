@@ -1,0 +1,65 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: shop-redis
+  labels: {{- include "shop.labels" . | nindent 4 }}
+spec:
+  clusterIP: None            # headless: StatefulSet pods get stable DNS names
+  selector: {{- include "shop.redis.selector" . | nindent 4 }}
+  ports:
+    - { name: redis, port: 6379 }
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: shop-redis
+  labels: {{- include "shop.labels" . | nindent 4 }}
+spec:
+  serviceName: shop-redis
+  replicas: 1
+  selector:
+    matchLabels: {{- include "shop.redis.selector" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "shop.redis.selector" . | nindent 8 }}
+    spec:
+      serviceAccountName: shop
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: redis
+          image: {{ .Values.redis.image }}
+          # The password comes from the Secret; --appendonly keeps writes across restarts.
+          command: ["sh", "-c", "exec redis-server --requirepass \"$REDIS_PASSWORD\" --appendonly yes"]
+          env:
+            - name: REDIS_PASSWORD
+              valueFrom: { secretKeyRef: { name: shop-redis, key: password } }
+          ports:
+            - { name: redis, containerPort: 6379 }
+          readinessProbe:
+            exec: { command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"] }
+            periodSeconds: 5
+          livenessProbe:
+            exec: { command: ["sh", "-c", "redis-cli -a \"$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"] }
+            periodSeconds: 10
+            failureThreshold: 6
+          resources: {{- toYaml .Values.redis.resources | nindent 12 }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: data, mountPath: /data }
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: {{ .Values.redis.storage }}

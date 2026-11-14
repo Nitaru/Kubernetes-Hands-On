@@ -1,0 +1,35 @@
+image:
+  repository: shop-api
+  tag: dev
+  pullPolicy: IfNotPresent   # the image is loaded into kind, never pulled
+
+api:
+  replicas: 2                # the HPA takes over once enabled
+  port: 3000
+  paymentFailureRate: "0.03"
+  resources:
+    requests: { cpu: 100m, memory: 96Mi }
+    limits:   { memory: 192Mi }   # memory limit only: CPU limits cause throttling and hide real load
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 8
+  targetCPUUtilizationPercentage: 60
+
+ingress:
+  enabled: true
+  className: traefik
+  host: shop.localtest.me    # resolves to 127.0.0.1, so no /etc/hosts edit is needed
+
+redis:
+  image: redis:7.4-alpine
+  storage: 1Gi
+  resources:
+    requests: { cpu: 50m, memory: 64Mi }
+    limits:   { memory: 128Mi }
+
+networkPolicy:
+  enabled: true
+  ingressNamespace: traefik        # who may call the API
+  monitoringNamespace: monitoring  # who may scrape /metrics

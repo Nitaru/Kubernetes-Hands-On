@@ -1,0 +1,31 @@
+# Ingress controller, exposed on a fixed NodePort that kind maps to the host (see kind/cluster.yaml).
+deployment:
+  replicas: 2
+service:
+  spec:
+    type: NodePort
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    nodePort: 30443
+providers:
+  kubernetesGateway:
+    enabled: false
+resources:
+  requests: { cpu: 50m, memory: 64Mi }
+  limits:   { memory: 128Mi }
+metrics:
+  prometheus:
+    service:
+      enabled: true
+# kind on Docker Desktop: a NodePort request that has to hop to a pod on another node hangs when it
+# enters through the published host port (in-cluster and node-to-node traffic is fine). Running the
+# ingress controller on the control-plane node, where the port is published, avoids that hop.
+# This is the standard recipe for ingress on kind; a real cluster would use a LoadBalancer.
+nodeSelector:
+  node-role.kubernetes.io/control-plane: ""
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule

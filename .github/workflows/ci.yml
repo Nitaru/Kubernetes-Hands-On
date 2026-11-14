@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
+          sudo mv kubeconform /usr/local/bin/
+      - run: helm lint charts/shop
+      - name: Validate rendered manifests against the Kubernetes schemas
+        run: helm template shop charts/shop -n shop | kubeconform -strict -summary
+      - name: Lint the Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: app/Dockerfile
+          ignore: DL3018
+
+  e2e:
+    # Builds the whole platform on a fresh kind cluster and runs the smoke tests against it.
+    runs-on: ubuntu-latest
+    needs: lint
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Build the platform
+        run: scripts/up.sh
+      - name: Smoke tests
+        run: scripts/smoke.sh
+      - name: Dump cluster state on failure
+        if: failure()
+        run: |
+          kubectl get pods -A -o wide
+          kubectl -n shop describe pods
+          kubectl -n shop logs -l app.kubernetes.io/name=shop-api --tail=50

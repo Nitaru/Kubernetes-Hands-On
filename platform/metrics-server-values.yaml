@@ -1,0 +1,5 @@
+# kind kubelets use self-signed certificates, so metrics-server must skip verification.
+# Do NOT do this on a real cluster. Needed here for `kubectl top` and the HPA.
+args:
+  - --kubelet-insecure-tls
+  - --kubelet-preferred-address-types=InternalIP

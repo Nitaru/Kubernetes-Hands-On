@@ -1,0 +1,34 @@
+# In-cluster load generator. It goes through Traefik like real users do:
+# loadtest namespace -> traefik -> shop-api. Scale to 0 to stop.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: loadtest
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loadgen
+  namespace: loadtest
+spec:
+  replicas: 0
+  selector:
+    matchLabels: { app: loadgen }
+  template:
+    metadata:
+      labels: { app: loadgen }
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.11.1
+          command: ["sh", "-c"]
+          args:
+            - |
+              while true; do
+                for i in 1 2 3 4 5 6 7 8; do
+                  curl -s -o /dev/null -H "Host: shop.localtest.me" "http://traefik.traefik.svc/api/compute?ms=80" &
+                done
+                wait
+              done
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }

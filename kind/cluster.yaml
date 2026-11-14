@@ -1,0 +1,16 @@
+# 1 control plane + 2 workers. The default CNI is turned off because kindnet does not enforce
+# NetworkPolicies; Calico is installed instead (scripts/up.sh) so the policies really work.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: hands-on
+networking:
+  disableDefaultCNI: true
+  podSubnet: 192.168.0.0/16   # Calico's default pool
+nodes:
+  - role: control-plane
+    extraPortMappings:
+      # host :8080 / :8443 -> NodePort of the Traefik service (any node forwards it)
+      - { containerPort: 30080, hostPort: 8080, protocol: TCP }
+      - { containerPort: 30443, hostPort: 8443, protocol: TCP }
+  - role: worker
+  - role: worker
