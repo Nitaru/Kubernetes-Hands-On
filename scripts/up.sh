@@ -24,6 +24,11 @@ kubectl apply -f "https://raw.githubusercontent.com/projectcalico/calico/$CALICO
 kubectl -n kube-system rollout status daemonset/calico-node --timeout=240s
 kubectl wait --for=condition=Ready nodes --all --timeout=240s
 
+say "Adding the Helm chart repositories"
+helm repo add traefik https://traefik.github.io/charts --force-update >/dev/null
+helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ --force-update >/dev/null
+helm repo update traefik metrics-server >/dev/null
+
 say "Installing Traefik (ingress)"
 helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART" \
   -n traefik --create-namespace -f platform/traefik-values.yaml --wait --timeout 5m
