@@ -28,6 +28,11 @@ jobs:
         with:
           dockerfile: app/Dockerfile
           ignore: DL3018
+      - name: Lint the Git server Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: platform/gitops/Dockerfile
+          ignore: DL3018
 
   scan:
     # Fails the build on HIGH/CRITICAL CVEs that have a fix, misconfigurations, or committed secrets.
@@ -46,15 +51,24 @@ jobs:
           path: sbom.cdx.json
 
   e2e:
-    # Builds the whole platform on a fresh kind cluster and runs the smoke tests against it.
+    # Builds the whole platform on a fresh kind cluster and runs the smoke tests against it,
+    # once with the app installed directly by Helm and once with Argo CD deploying it from Git.
     runs-on: ubuntu-latest
     needs: [lint, scan]
-    timeout-minutes: 25
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        mode: [helm, gitops]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # the in-cluster Git server is seeded from this repository's history
       - uses: azure/setup-helm@v4
       - name: Build the platform
-        run: scripts/up.sh
+        run: |
+          if [ "${{ matrix.mode }}" = gitops ]; then export GITOPS=1; fi
+          scripts/up.sh
       - name: Smoke tests
         run: scripts/smoke.sh
       - name: Dump cluster state on failure
@@ -63,3 +77,4 @@ jobs:
           kubectl get pods -A -o wide
           kubectl -n shop describe pods
           kubectl -n shop logs -l app.kubernetes.io/name=shop-api --tail=50
+          kubectl -n argocd get applications -o yaml || true

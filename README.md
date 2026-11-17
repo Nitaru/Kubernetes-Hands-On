@@ -1,8 +1,10 @@
 # Kubernetes Hands-On
 
+[![ci](https://github.com/Nitaru/Kubernetes-Hands-On/actions/workflows/ci.yml/badge.svg)](https://github.com/Nitaru/Kubernetes-Hands-On/actions/workflows/ci.yml)
+
 A small production-style platform on a local multi-node Kubernetes cluster: ingress, autoscaling,
 zero-downtime rollouts, default-deny network policies, hardened pods, a stateful backend, and
-observability with SLO-based alerting, security scanning in CI and admission policies.
+observability with SLO-based alerting, security scanning in CI, admission policies and GitOps with Argo CD.
 Everything is built from scratch by one script and verified by tests that run in CI.
 
 ```
@@ -19,13 +21,14 @@ Everything is built from scratch by one script and verified by tests that run in
  │   shop-redis (StatefulSet, PVC, password from a Secret)                      │
  │                                                                              │
  │   metrics-server  ──▶  kubectl top, HPA                                      │
-│                                                                              │
-│   Kyverno ──▶ admission policies: unhardened pods are refused at apply time  │
-│                                                                              │
-│   Prometheus ──scrapes──▶ shop-api /metrics   (ServiceMonitor, allowed by    │
-│      │  SLO recording + burn-rate alert rules  the NetworkPolicy)            │
-│      ├──▶ Alertmanager                                                       │
-│      └──▶ Grafana  http://grafana.localtest.me:8080  (dashboard as code)     │
+ │                                                                              │
+ │   Kyverno ──▶ admission policies: unhardened pods are refused at apply time  │
+ │   Argo CD ──▶ keeps the shop namespace equal to Git (prune, self-heal)       │
+ │                                                                              │
+ │   Prometheus ──scrapes──▶ shop-api /metrics   (ServiceMonitor, allowed by    │
+ │      │  SLO recording + burn-rate alert rules  the NetworkPolicy)            │
+ │      ├──▶ Alertmanager                                                       │
+ │      └──▶ Grafana  http://grafana.localtest.me:8080  (dashboard as code)     │
  └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -36,8 +39,10 @@ Needs Docker, [kind](https://kind.sigs.k8s.io), `kubectl` and `helm`.
 ```sh
 make up        # cluster + Calico + Traefik + metrics-server + Prometheus/Grafana + app (about 9 minutes)
 make test      # 29 assertions against the live cluster
+make up-gitops # same platform, but Argo CD deploys the app from Git (see GitOps below); `make test` then runs 35
 make scan      # Trivy: image CVEs, Dockerfile and chart misconfigurations, secrets
 make grafana-password   # login for http://grafana.localtest.me:8080 (user: admin)
+make argocd-password    # login for http://argocd.localtest.me:8080 (GitOps mode only)
 curl http://shop.localtest.me:8080/api/products    # localtest.me resolves to 127.0.0.1
 make down
 ```
@@ -53,12 +58,13 @@ make down
 | **High availability** | Topology spread over nodes, a PodDisruptionBudget, and a node drain that keeps serving. |
 | **Network security** | Default-deny ingress and egress, then explicit allows: ingress controller to API, API to Redis, DNS. Enforced by Calico. |
 | **Pod hardening** | Non-root, read-only root filesystem, all capabilities dropped, seccomp `RuntimeDefault`, no service-account token mounted. |
-| **Secrets** | Redis password generated once by Helm (`lookup` keeps it across upgrades) and injected from a Secret, never written in a manifest. |
+| **Secrets** | Redis password generated once by Helm (`lookup` keeps it across upgrades; under Argo CD the field is ignored, see GitOps) and injected from a Secret, never written in a manifest. |
 | **Stateful workload** | Redis as a StatefulSet with a PersistentVolumeClaim and append-only persistence. |
 | **Observability** | kube-prometheus-stack (pinned chart). The chart ships a `ServiceMonitor`, a `PrometheusRule` and a Grafana dashboard as code ([`dashboard.json`](charts/shop/files/dashboard.json), picked up by the Grafana sidecar). The default-deny policy has one explicit allow so only the `monitoring` namespace can scrape `/metrics`. |
 | **SLOs and alerting** | Two SLOs on the user-facing routes: 99% of requests are not 5xx, 95% finish within 500 ms. Alerts use multiwindow burn rates (page at 14.4x, ticket at 6x), written in [`slo-rules.yaml`](charts/shop/files/slo-rules.yaml) and unit-tested with `promtool` ([`tests`](tests/slo-rules.test.yaml), run in CI with no cluster). |
 | **Supply-chain scanning** | [`scripts/scan.sh`](scripts/scan.sh) runs Trivy on the image (HIGH/CRITICAL CVEs that have a fix), the Dockerfile and chart (misconfigurations) and the repo (secrets), and CI fails the build on any finding. It also produces a CycloneDX SBOM, uploaded as a CI artifact. The image is built in two stages so npm never reaches the runtime image. |
 | **Admission policies** | Kyverno `ValidatingPolicy` rules (CEL) enforce, in the `shop` namespace, what the chart already does: non-root, read-only filesystem, no privilege escalation, all capabilities dropped, seccomp, pinned image tags, requests and a memory limit. Bad pods and bad Deployments are rejected at `kubectl apply` with the rule that failed, and the chart's own pods are admitted. |
+| **GitOps** | Argo CD watches a Git repository and keeps the cluster equal to it: automated sync with prune and self-heal. A hand-made change (deleting the default-deny NetworkPolicy, editing the HPA) is undone within seconds, and a commit is deployed without anyone running `helm` or `kubectl`. By default it watches a tiny Git server inside the cluster, so the whole loop works offline and in CI; pointing it at GitHub is one variable (below). |
 | **Testing** | `scripts/smoke.sh` asserts cluster, workload, traffic and policy behaviour. CI runs lint, then builds the platform on a fresh kind cluster and runs it. |
 
 ## Prove it
@@ -71,6 +77,7 @@ make demo-netpol     # a pod in another namespace is blocked from the API and Re
 make demo-drain      # drain a worker node; the PDB keeps the service up
 make demo-slo        # make every payment fail; watch the error budget burn and the page fire
 make demo-policy     # apply good and bad manifests; the API server refuses the bad ones
+make demo-gitops     # undo hand-made drift, then change the cluster the GitOps way: commit, push, sync, revert
 ```
 
 The network policy demo includes a control target (an unprotected service that must answer) so
@@ -95,6 +102,25 @@ dependencies in a build stage, drops npm and corepack from the runtime stage, an
 The rescan reports 0 HIGH and 0 CRITICAL, the app still passes every smoke test, and the SBOM lists 103
 components. I also checked that the scanners can fail: a Dockerfile without `USER` fails the config scan
 (`DS-0002`), and a fake GitHub token fails the secret scan.
+
+## GitOps
+
+`make up-gitops` builds the same platform, but instead of `helm install shop` it creates one Argo CD
+`Application` ([`platform/gitops/application.yaml`](platform/gitops/application.yaml)) that points at
+`charts/shop` in a Git repository. From then on Git is the source of truth.
+
+- **Default:** a small Git server runs inside the cluster and is seeded with this checkout's commits
+  (uncommitted changes are not deployed, because GitOps only sees commits). Nothing leaves your machine, and
+  CI does not depend on GitHub being reachable. `make demo-gitops` clones from it, commits, pushes, and
+  watches Argo deploy the change, then reverts it.
+- **Against GitHub:** after the repository is pushed, run
+  `GITOPS_REPO=https://github.com/Nitaru/Kubernetes-Hands-On.git make up-gitops`. Then a merge to `main`
+  is what deploys. The repository must be public, or Argo needs credentials (`argocd repo add` or a
+  repository Secret). `GITOPS_REVISION` selects a branch, tag or commit other than `main`.
+- **What this does not do yet:** the app image is built locally and loaded into kind (`shop-api:dev`), so
+  Git changes configuration, not code. A real pipeline would have CI push an image to a registry and commit
+  the new tag to this repository, and Argo would roll it out.
+- `make up` and `make up-gitops` are alternatives for the same release name; switch with `make down` first.
 
 ## Things that went wrong, and what they taught me
 
@@ -135,6 +161,24 @@ components. I also checked that the scanners can fail: a Dockerfile without `USE
 - **Enforcing policies has an availability cost.** With `failurePolicy: Fail`, if Kyverno is down, new pods
   in `shop` are refused. That is the secure choice and is noted in the policy file; a real cluster would
   run several controller replicas.
+- **Argo CD showed the app as `Progressing` forever.** Everything was synced and every pod was running; the
+  cause was the Ingress, which Argo calls healthy only once it has a load-balancer address, and Traefik on
+  kind (a NodePort) never gets one. A custom health check in the Argo values accepts the Ingress. A cluster
+  with a real LoadBalancer would not need it.
+- **Helm's `lookup` does not exist under Argo CD.** The chart keeps the Redis password across upgrades with
+  `lookup`, but Argo renders with `helm template`, which cannot read the cluster, so every render invented a
+  new password and the Secret would be rewritten on every sync. The Application ignores that one field
+  (`ignoreDifferences` plus `RespectIgnoreDifferences`). Checked by hashing the password before and after two
+  real Git-driven syncs: identical.
+- **My first two GitOps tests were wrong.** I forced a sync with a patch that replaced the Application's sync
+  options, so it silently dropped the setting I was testing, and the password changed. I also deleted a
+  PodDisruptionBudget and a NetworkPolicy with one command that treated both names as PDBs, so "restored in
+  3 seconds" was a lie. Both are now exercised through the demo with real commits and real deletes.
+- **Kyverno needs a moment after its pod is Ready.** Applying the policies right after `helm --wait`
+  sometimes failed with "failed calling webhook" because the webhooks were not registered yet. It passed
+  once by luck and failed on the next clean build, so `up.sh` now retries the apply.
+- **Seeding the Git server needs full history.** `git bundle` refuses a shallow clone, which is what
+  `actions/checkout` makes by default, so the e2e job fetches with `fetch-depth: 0`.
 - **`helm --wait` does not wait for the Prometheus StatefulSet.** The operator creates it after Helm
   returns, so the smoke test waits for the pods itself.
 
@@ -145,12 +189,12 @@ app/              Node.js shop API (Prometheus metrics, /health, /ready, gracefu
 charts/shop/      the Helm chart (files/: SLO rules and Grafana dashboard)
 tests/            promtool unit tests for the SLO rules, manifests the admission policies must accept or reject
 kind/cluster.yaml 3-node cluster, default CNI disabled
-platform/         values for Traefik, metrics-server, kube-prometheus-stack and Kyverno; policies/; the load generator
+platform/         values for Traefik, metrics-server, kube-prometheus-stack, Kyverno and Argo CD; policies/; gitops/ (Application, in-cluster Git server); the load generator
 scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh, scan.sh
-.github/          CI: helm lint, kubeconform (incl. CRD schemas), promtool, hadolint, Trivy scans and SBOM, then an end-to-end run on kind
+.github/          CI: helm lint, kubeconform (incl. CRD schemas), promtool, hadolint, Trivy scans and SBOM, then an end-to-end run on kind in both install modes (Helm and Argo CD)
 ```
 
 ## Versions
 
 Kubernetes v1.37.0 (kind v0.33), Calico v3.31.0, Traefik chart 42.4.0, metrics-server chart 3.14.0,
-kube-prometheus-stack chart 93.3.1, Kyverno chart 3.10.0, Trivy 0.76.2.
+kube-prometheus-stack chart 93.3.1, Kyverno chart 3.10.0, Argo CD chart 10.18.0 (Argo CD v3.6), Trivy 0.76.2.

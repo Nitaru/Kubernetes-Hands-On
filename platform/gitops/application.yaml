@@ -1,0 +1,33 @@
+# The one object Argo CD needs: "keep this cluster equal to what is in Git".
+# __REPO_URL__ and __REVISION__ are filled in by scripts/up.sh.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: shop
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: __REPO_URL__
+    targetRevision: __REVISION__
+    path: charts/shop
+    helm:
+      releaseName: shop
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: shop
+  syncPolicy:
+    automated:
+      prune: true      # delete what was removed from Git
+      selfHeal: true   # undo changes made by hand in the cluster
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    # The chart keeps the Redis password across upgrades with Helm's `lookup`. Argo renders with
+    # `helm template`, which cannot look anything up, so every render invents a new random password.
+    # Ignore it: the Secret is created once and the live value is never overwritten.
+    - group: ""
+      kind: Secret
+      name: shop-redis
+      jsonPointers: [/data/password]

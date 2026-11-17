@@ -122,7 +122,57 @@ policy() {
   done
 }
 
+gitops() {
+  app() { kubectl -n argocd get application shop -o jsonpath="$1"; }
+  hpa_max() { kubectl -n shop get hpa shop-api -o jsonpath='{.spec.maxReplicas}'; }
+  redis_pw() { kubectl -n shop get secret shop-redis -o jsonpath='{.data.password}' | shasum | cut -c1-12; }
+  wait_for() {   # wait_for <description> <seconds> <shell condition>, re-evaluated every second
+    local what=$1 limit=$2 cond=$3
+    for i in $(seq 1 "$limit"); do eval "$cond" >/dev/null 2>&1 && { printf '  %s after ~%ss\n' "$what" "$i"; return 0; }; sleep 1; done
+    printf '  TIMED OUT waiting for: %s\n' "$what"; return 1
+  }
+  say "Argo CD keeps the cluster equal to Git"
+  printf '  app shop: %s / %s, revision %.8s, source %s\n' "$(app '{.status.sync.status}')" "$(app '{.status.health.status}')" \
+    "$(app '{.status.sync.revision}')" "$(app '{.spec.source.repoURL}')"
+
+  say "1. Drift: delete the default-deny NetworkPolicy by hand (a security control disappears)"
+  run kubectl -n shop delete networkpolicy default-deny
+  wait_for "Argo restored default-deny" 60 "kubectl -n shop get networkpolicy default-deny"
+
+  say "2. Drift: scale the HPA's ceiling by hand, then watch Argo put it back"
+  run kubectl -n shop patch hpa shop-api --type merge -p '{"spec":{"maxReplicas":3}}'
+  wait_for "Argo restored maxReplicas to 8" 60 '[[ $(hpa_max) == 8 ]]'
+
+  if [[ $(app '{.spec.source.repoURL}') != git://git-server.gitops.svc* ]]; then
+    echo "  (the change-through-Git step needs the built-in Git server, so it is skipped for $(app '{.spec.source.repoURL}'))"
+    return
+  fi
+  say "3. The real workflow: change Git, not the cluster (maxReplicas 8 -> 6)"
+  local work; work=$(mktemp -d)
+  kubectl -n gitops port-forward svc/git-server 19418:9418 >/dev/null 2>&1 &
+  local pf=$!
+  trap 'kill $pf 2>/dev/null; rm -rf "$work"' RETURN
+  wait_for "Git server reachable" 20 "git ls-remote git://localhost:19418/shop.git"
+  git clone -q git://localhost:19418/shop.git "$work/shop"
+  local gitc=(git -C "$work/shop" -c user.name=demo -c user.email=demo@example.com)
+  grep -q '^  maxReplicas: 8' "$work/shop/charts/shop/values.yaml" || { echo "  Git does not have maxReplicas: 8 (a previous run was interrupted); re-seed with scripts/up.sh"; return 1; }
+  pw_before=$(redis_pw)
+  sed -i.bak 's/^  maxReplicas: 8/  maxReplicas: 6/' "$work/shop/charts/shop/values.yaml"
+  "${gitc[@]}" commit -qam "Lower the autoscaling ceiling to 6"
+  run "${gitc[@]}" push -q origin HEAD:main
+  wait_for "HPA maxReplicas is now 6 (Argo polled Git and synced)" 120 '[[ $(hpa_max) == 6 ]]'
+  printf '  Argo: %s / %s, revision %.8s\n' "$(app '{.status.sync.status}')" "$(app '{.status.health.status}')" "$(app '{.status.sync.revision}')"
+
+  say "4. Roll it back the GitOps way: revert the commit"
+  "${gitc[@]}" revert --no-edit HEAD >/dev/null
+  run "${gitc[@]}" push -q origin HEAD:main
+  wait_for "HPA maxReplicas is back to 8" 120 '[[ $(hpa_max) == 8 ]]'
+  printf '  Redis password unchanged across both syncs: %s\n' "$([[ $(redis_pw) == "$pw_before" ]] && echo yes || echo "NO (before $pw_before, after $(redis_pw))")"
+  printf '  Argo: %s / %s\n' "$(app '{.status.sync.status}')" "$(app '{.status.health.status}')"
+  kill $pf 2>/dev/null; wait $pf 2>/dev/null
+}
+
 case "${1:-}" in
-  selfheal) selfheal ;; rollout) rollout ;; autoscale) autoscale ;; netpol) netpol ;; drain) drain ;; slo) slo ;; policy) policy ;;
-  *) echo "usage: $0 selfheal|rollout|autoscale|netpol|drain|slo|policy" >&2; exit 2 ;;
+  selfheal) selfheal ;; rollout) rollout ;; autoscale) autoscale ;; netpol) netpol ;; drain) drain ;; slo) slo ;; policy) policy ;; gitops) gitops ;;
+  *) echo "usage: $0 selfheal|rollout|autoscale|netpol|drain|slo|policy|gitops" >&2; exit 2 ;;
 esac

@@ -1,4 +1,4 @@
-.PHONY: demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -40,3 +40,10 @@ sbom:
 
 demo-policy:
 	scripts/demo.sh policy
+
+up-gitops:         ## like `make up`, but Argo CD deploys the app from Git (GITOPS_REPO=<url> to use GitHub)
+	GITOPS=1 scripts/up.sh
+argocd-password:   ## print the Argo CD admin password (user: admin, http://argocd.localtest.me:8080)
+	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
+demo-gitops:
+	scripts/demo.sh gitops

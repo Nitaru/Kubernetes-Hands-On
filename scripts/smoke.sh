@@ -65,5 +65,19 @@ check "a root, unhardened pod is rejected"    denied tests/policies/bad-root-pod
 check "a :latest image is rejected"           denied tests/policies/bad-latest-tag.yaml
 check "an unhardened Deployment is rejected at apply time" denied tests/policies/bad-deployment.yaml
 
+if kubectl -n argocd get application shop >/dev/null 2>&1; then
+  echo "gitops (Argo CD)"
+  app() { kubectl -n argocd get application shop -o jsonpath="$1"; }
+  restored() { kubectl -n shop delete pdb shop-api >/dev/null && retry_long kubectl -n shop get pdb shop-api; }
+  check "Argo CD server, repo-server and controller are Ready" bash -c 'kubectl -n argocd wait --for=condition=Ready pod -l "app.kubernetes.io/name in (argocd-server,argocd-repo-server,argocd-application-controller)" --timeout=120s'
+  check "shop is Synced with Git"               retry_long bash -c '[[ $(kubectl -n argocd get application shop -o jsonpath={.status.sync.status}) == Synced ]]'
+  check "shop is Healthy"                       retry_long bash -c '[[ $(kubectl -n argocd get application shop -o jsonpath={.status.health.status}) == Healthy ]]'
+  check "automated sync with prune and self-heal is on" bash -c '[[ $(kubectl -n argocd get application shop -o jsonpath="{.spec.syncPolicy.automated.prune}{.spec.syncPolicy.automated.selfHeal}") == truetrue ]]'
+  check "a PodDisruptionBudget deleted by hand is restored by Argo" restored
+  check "Argo CD UI answers through the ingress" http 200 "http://argocd.localtest.me:8080/"
+else
+  echo "gitops (Argo CD): skipped, the app was installed directly with Helm (make up-gitops to use Argo CD)"
+fi
+
 printf '\n  %d passed, %d failed\n' "$pass" "$fail"
 (( fail == 0 ))
