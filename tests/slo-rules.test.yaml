@@ -1,0 +1,104 @@
+# Unit tests for charts/shop/files/slo-rules.yaml. Run with scripts/test-rules.sh (promtool).
+rule_files:
+  - ../charts/shop/files/slo-rules.yaml
+evaluation_interval: 1m
+
+tests:
+  - name: healthy traffic fires nothing
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/orders", status="201"}'
+        values: '0+100x480'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/orders", status="201", le="0.5"}'
+        values: '0+100x480'
+    alert_rule_test:
+      - eval_time: 7h
+        alertname: ShopAvailabilityFastBurn
+        exp_alerts: []
+      - eval_time: 7h
+        alertname: ShopLatencyFastBurn
+        exp_alerts: []
+      - eval_time: 7h
+        alertname: ShopAvailabilitySlowBurn
+        exp_alerts: []
+
+  - name: 20 percent 5xx burns the availability budget fast
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/orders", status="201"}'
+        values: '0+80x120'
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/orders", status="502"}'
+        values: '0+20x120'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/orders", status="201", le="0.5"}'
+        values: '0+80x120'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/orders", status="502", le="0.5"}'
+        values: '0+20x120'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: ShopAvailabilityFastBurn
+        exp_alerts:
+          - exp_labels: { severity: critical, slo: availability }
+            exp_annotations:
+              summary: Shop API is burning its availability error budget 14.4x too fast
+              description: "20% of requests failed over the last hour (SLO allows 1%). At this rate the 30-day budget is gone in about 2 days."
+      - eval_time: 70m
+        alertname: ShopLatencyFastBurn
+        exp_alerts: []
+
+  - name: 8 percent 5xx is a slow burn, not a page
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/orders", status="201"}'
+        values: '0+92x480'
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/orders", status="502"}'
+        values: '0+8x480'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/orders", status="201", le="0.5"}'
+        values: '0+92x480'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/orders", status="502", le="0.5"}'
+        values: '0+8x480'
+    alert_rule_test:
+      - eval_time: 7h
+        alertname: ShopAvailabilityFastBurn
+        exp_alerts: []
+      - eval_time: 7h
+        alertname: ShopAvailabilitySlowBurn
+        exp_alerts:
+          - exp_labels: { severity: warning, slo: availability }
+            exp_annotations:
+              summary: Shop API is burning its availability error budget 6x too fast
+              description: "8% of requests failed over the last 6 hours (SLO allows 1%)."
+
+  - name: 80 percent of requests over 500 ms burns the latency budget fast
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/products", status="200"}'
+        values: '0+100x120'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/products", status="200", le="0.5"}'
+        values: '0+20x120'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: ShopLatencyFastBurn
+        exp_alerts:
+          - exp_labels: { severity: critical, slo: latency }
+            exp_annotations:
+              summary: Shop API is burning its latency error budget 14.4x too fast
+              description: "80% of requests took longer than 500 ms over the last hour (SLO allows 5%)."
+
+  - name: health checks and the load endpoint do not count against the SLO
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/orders", status="201"}'
+        values: '0+100x120'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/orders", status="201", le="0.5"}'
+        values: '0+100x120'
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/compute", status="500"}'
+        values: '0+500x120'
+      - series: 'http_request_duration_seconds_bucket{app="shop-api", route="/api/compute", status="500", le="0.5"}'
+        values: '0+0x120'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: ShopAvailabilityFastBurn
+        exp_alerts: []
+      - eval_time: 70m
+        alertname: ShopLatencyFastBurn
+        exp_alerts: []

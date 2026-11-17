@@ -1,4 +1,4 @@
-.PHONY: up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -9,7 +9,8 @@ status:
 	kubectl get pods -A
 lint:              ## offline checks, same as CI
 	helm lint charts/shop
-	helm template shop charts/shop -n shop | kubeconform -strict -summary -ignore-missing-schemas
+	helm template shop charts/shop -n shop | kubeconform -strict -summary -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+	scripts/test-rules.sh
 test:              ## smoke test against the running cluster
 	scripts/smoke.sh
 
@@ -23,3 +24,10 @@ demo-netpol:
 	scripts/demo.sh netpol
 demo-drain:
 	scripts/demo.sh drain
+
+demo-slo:
+	scripts/demo.sh slo
+
+grafana-password:  ## print the Grafana admin password (user: admin, http://grafana.localtest.me:8080)
+	@kubectl -n monitoring get secret kps-grafana -o jsonpath='{.data.admin-password}' | base64 -d; echo
+

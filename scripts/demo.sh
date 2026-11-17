@@ -88,7 +88,32 @@ drain() {
   run kubectl uncordon "$node"
 }
 
+slo() {
+  say "SLO alerting: break payments, watch the error budget burn and the page fire, then recover"
+  prom=/api/v1/namespaces/monitoring/services/kps-prometheus:9090/proxy/api/v1
+  q() { kubectl get --raw "$prom/query?query=$(jq -rn --arg q "$1" '$q|@uri')" | jq -r '.data.result[0].value[1] // "no data"'; }
+  firing() {
+    kubectl get --raw "$prom/query?query=ALERTS%7Balertname%3D~%22Shop.*%22%2Calertstate%3D%22firing%22%7D" \
+      | jq -r '[.data.result[].metric.alertname] | join(", ") | if . == "" then "none" else . end'
+  }
+  say "Every payment fails (PAYMENT_FAILURE_RATE=1) and clients keep ordering"
+  run helm upgrade shop charts/shop -n shop --reuse-values --set api.paymentFailureRate=1 --wait --timeout 3m
+  ( while [[ ! -f /tmp/slo-demo.stop ]]; do
+      curl -s -o /dev/null -XPOST -H 'content-type: application/json' -d '{"product":"mouse"}' $URL/api/orders
+      curl -s -o /dev/null $URL/api/products; sleep 0.1; done ) &
+  loop=$!
+  for i in $(seq 1 14); do
+    printf '  t+%3ss  errors(5m) %-8s  errors(1h) %-8s  firing: %s\n' $((i * 20)) \
+      "$(q shop:http_errors:ratio_rate5m | cut -c1-6)" "$(q shop:http_errors:ratio_rate1h | cut -c1-6)" "$(firing)"
+    sleep 20
+  done
+  touch /tmp/slo-demo.stop; wait $loop 2>/dev/null; rm -f /tmp/slo-demo.stop
+  say "Restore payments"
+  run helm upgrade shop charts/shop -n shop --reuse-values --set api.paymentFailureRate=0.03 --wait --timeout 3m
+  echo "  alerts resolve once the 5m window clears; Grafana: http://grafana.localtest.me:8080"
+}
+
 case "${1:-}" in
-  selfheal) selfheal ;; rollout) rollout ;; autoscale) autoscale ;; netpol) netpol ;; drain) drain ;;
-  *) echo "usage: $0 selfheal|rollout|autoscale|netpol|drain" >&2; exit 2 ;;
+  selfheal) selfheal ;; rollout) rollout ;; autoscale) autoscale ;; netpol) netpol ;; drain) drain ;; slo) slo ;;
+  *) echo "usage: $0 selfheal|rollout|autoscale|netpol|drain|slo" >&2; exit 2 ;;
 esac

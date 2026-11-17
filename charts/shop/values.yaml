@@ -33,3 +33,8 @@ networkPolicy:
   enabled: true
   ingressNamespace: traefik        # who may call the API
   monitoringNamespace: monitoring  # who may scrape /metrics
+
+monitoring:
+  enabled: true            # ServiceMonitor, SLO rules and dashboard; needs kube-prometheus-stack installed first
+  dashboard: true
+  scrapeInterval: 15s

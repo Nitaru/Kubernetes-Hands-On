@@ -12,6 +12,7 @@ http() {  # http <expected code> <curl args...>
   local want=$1; shift
   [[ $(curl -s -m 8 -o /dev/null -w '%{http_code}' "$@") == "$want" ]]
 }
+retry_long() { for _ in $(seq 1 40); do "$@" && return 0; sleep 3; done; return 1; }
 retry() { for _ in $(seq 1 20); do "$@" && return 0; sleep 3; done; return 1; }
 
 echo "cluster"
@@ -35,6 +36,24 @@ check "bad product -> 400"                    http 400 -XPOST -H 'content-type: 
 echo "network policies"
 check "4 NetworkPolicies applied"             bash -c '[[ $(kubectl -n shop get netpol --no-headers | wc -l) -eq 4 ]]'
 check "intruder namespace is blocked"         bash -c 'scripts/demo.sh netpol 2>&1 | grep -q "shop-api  blocked" && scripts/demo.sh netpol 2>&1 | grep -q "redis     blocked"'
+echo "monitoring"
+PROM=/api/v1/namespaces/monitoring/services/kps-prometheus:9090/proxy/api/v1
+# promq <query>: instant query through the API server proxy; fails unless Prometheus says "success"
+promq() { kubectl get --raw "$PROM/query?query=$(jq -rn --arg q "$1" '$q|@uri')" | jq -e 'select(.status == "success")'; }
+prom_ready()     { kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/name=prometheus --timeout=120s \
+                   && kubectl -n monitoring wait --for=condition=Ready pod -l app.kubernetes.io/name=alertmanager --timeout=120s; }
+targets_up()     { promq 'count(up{namespace="shop", service="shop-api"} == 1)' | jq -e '.data.result[0].value[1] | tonumber >= 2'; }
+rules_loaded()   { kubectl get --raw "$PROM/rules" | jq -e '[.data.groups[].rules[].name] | index("ShopAvailabilityFastBurn")'; }
+sli_has_data()   { promq 'shop:http_requests:rate5m' | jq -e '.data.result | length == 1'; }
+nothing_firing() { promq 'ALERTS{alertname=~"Shop.*", alertstate="firing"}' | jq -e '.data.result | length == 0'; }
+dashboard_up()   { local pw; pw=$(kubectl -n monitoring get secret kps-grafana -o jsonpath='{.data.admin-password}' | base64 -d)
+                   curl -s -m 8 -u "admin:$pw" 'http://grafana.localtest.me:8080/api/search?query=Shop' | jq -e 'type == "array" and any(.[]; .uid == "shop-api-slo")'; }
+check "Prometheus and Alertmanager are Ready"   prom_ready
+check "Prometheus scrapes every shop-api pod (network policy allows it)" retry_long targets_up
+check "SLO rules are loaded"                    rules_loaded
+check "SLI recording rule returns data"         retry_long sli_has_data
+check "no SLO alert is firing under normal traffic" nothing_firing
+check "Grafana serves the shop dashboard"       retry_long dashboard_up
 
 printf '\n  %d passed, %d failed\n' "$pass" "$fail"
 (( fail == 0 ))

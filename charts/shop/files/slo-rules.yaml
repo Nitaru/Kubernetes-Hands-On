@@ -1,0 +1,110 @@
+# SLOs for the shop API, measured on user-facing routes only (/api/products and /api/orders;
+# health checks, /metrics and the CPU-burning /api/compute load endpoint are excluded).
+#
+#   availability  99%  of requests do not return 5xx            error budget 1%
+#   latency       95%  of requests finish within 500 ms        error budget 5%
+#
+# Alerts follow the multiwindow, multi-burn-rate pattern from the Google SRE Workbook: page when the
+# budget is burning 14.4x too fast (a 30-day budget gone in about 2 days), ticket at 6x (gone in 5 days).
+# Each alert needs a long window and a short window to agree, so it stops firing soon after recovery.
+#
+# Plain Prometheus rule-file format so `promtool test rules` can test it; the chart wraps it in a PrometheusRule.
+groups:
+  - name: shop-slo-recordings
+    rules:
+      - record: shop:http_requests:rate5m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[5m]))
+      - record: shop:http_errors:ratio_rate5m
+        expr: |
+          (sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)", status=~"5.."}[5m])) or vector(0))
+          /
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[5m]))
+      - record: shop:http_slow:ratio_rate5m
+        expr: |
+          1 - (
+            sum(rate(http_request_duration_seconds_bucket{app="shop-api", route=~"/api/(products|orders)", le="0.5"}[5m]))
+            /
+            sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[5m]))
+          )
+      - record: shop:http_requests:rate30m
+        expr: |
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[30m]))
+      - record: shop:http_errors:ratio_rate30m
+        expr: |
+          (sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)", status=~"5.."}[30m])) or vector(0))
+          /
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[30m]))
+      - record: shop:http_slow:ratio_rate30m
+        expr: |
+          1 - (
+            sum(rate(http_request_duration_seconds_bucket{app="shop-api", route=~"/api/(products|orders)", le="0.5"}[30m]))
+            /
+            sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[30m]))
+          )
+      - record: shop:http_requests:rate1h
+        expr: |
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[1h]))
+      - record: shop:http_errors:ratio_rate1h
+        expr: |
+          (sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)", status=~"5.."}[1h])) or vector(0))
+          /
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[1h]))
+      - record: shop:http_slow:ratio_rate1h
+        expr: |
+          1 - (
+            sum(rate(http_request_duration_seconds_bucket{app="shop-api", route=~"/api/(products|orders)", le="0.5"}[1h]))
+            /
+            sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[1h]))
+          )
+      - record: shop:http_requests:rate6h
+        expr: |
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[6h]))
+      - record: shop:http_errors:ratio_rate6h
+        expr: |
+          (sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)", status=~"5.."}[6h])) or vector(0))
+          /
+          sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[6h]))
+      - record: shop:http_slow:ratio_rate6h
+        expr: |
+          1 - (
+            sum(rate(http_request_duration_seconds_bucket{app="shop-api", route=~"/api/(products|orders)", le="0.5"}[6h]))
+            /
+            sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[6h]))
+          )
+  - name: shop-slo-alerts
+    rules:
+      - alert: ShopAvailabilityFastBurn
+        expr: shop:http_errors:ratio_rate1h > (14.4 * 0.01) and shop:http_errors:ratio_rate5m > (14.4 * 0.01)
+        for: 2m
+        labels: { severity: critical, slo: availability }
+        annotations:
+          summary: Shop API is burning its availability error budget 14.4x too fast
+          description: "{{ $value | humanizePercentage }} of requests failed over the last hour (SLO allows 1%). At this rate the 30-day budget is gone in about 2 days."
+      - alert: ShopAvailabilitySlowBurn
+        expr: shop:http_errors:ratio_rate6h > (6 * 0.01) and shop:http_errors:ratio_rate30m > (6 * 0.01)
+        for: 15m
+        labels: { severity: warning, slo: availability }
+        annotations:
+          summary: Shop API is burning its availability error budget 6x too fast
+          description: "{{ $value | humanizePercentage }} of requests failed over the last 6 hours (SLO allows 1%)."
+      - alert: ShopLatencyFastBurn
+        expr: shop:http_slow:ratio_rate1h > (14.4 * 0.05) and shop:http_slow:ratio_rate5m > (14.4 * 0.05)
+        for: 2m
+        labels: { severity: critical, slo: latency }
+        annotations:
+          summary: Shop API is burning its latency error budget 14.4x too fast
+          description: "{{ $value | humanizePercentage }} of requests took longer than 500 ms over the last hour (SLO allows 5%)."
+      - alert: ShopLatencySlowBurn
+        expr: shop:http_slow:ratio_rate6h > (6 * 0.05) and shop:http_slow:ratio_rate30m > (6 * 0.05)
+        for: 15m
+        labels: { severity: warning, slo: latency }
+        annotations:
+          summary: Shop API is burning its latency error budget 6x too fast
+          description: "{{ $value | humanizePercentage }} of requests took longer than 500 ms over the last 6 hours (SLO allows 5%)."
+      - alert: ShopApiDown
+        expr: sum(up{namespace="shop", service="shop-api"}) == 0 or absent(up{namespace="shop", service="shop-api"})
+        for: 5m
+        labels: { severity: critical }
+        annotations:
+          summary: No shop-api instance is being scraped successfully

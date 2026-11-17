@@ -1,0 +1,9 @@
+{{- if .Values.monitoring.enabled }}
+# The rules live in files/slo-rules.yaml (plain Prometheus format) so promtool can unit-test them.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: shop-slo
+  labels: {{- include "shop.labels" . | nindent 4 }}
+spec: {{- .Files.Get "files/slo-rules.yaml" | fromYaml | toYaml | nindent 2 }}
+{{- end }}

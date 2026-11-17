@@ -17,7 +17,12 @@ jobs:
           sudo mv kubeconform /usr/local/bin/
       - run: helm lint charts/shop
       - name: Validate rendered manifests against the Kubernetes schemas
-        run: helm template shop charts/shop -n shop | kubeconform -strict -summary
+        run: |
+          helm template shop charts/shop -n shop | kubeconform -strict -summary \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+      - name: Unit-test the SLO alert rules
+        run: scripts/test-rules.sh
       - name: Lint the Dockerfile
         uses: hadolint/hadolint-action@v3.1.0
         with:
