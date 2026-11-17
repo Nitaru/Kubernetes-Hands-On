@@ -1,4 +1,4 @@
-.PHONY: grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -31,3 +31,12 @@ demo-slo:
 grafana-password:  ## print the Grafana admin password (user: admin, http://grafana.localtest.me:8080)
 	@kubectl -n monitoring get secret kps-grafana -o jsonpath='{.data.admin-password}' | base64 -d; echo
 
+scan:              ## Trivy: image CVEs, Dockerfile and chart misconfigurations, secrets (builds the image first)
+	docker build -q -t shop-api:dev app
+	scripts/scan.sh all
+sbom:
+	docker build -q -t shop-api:dev app
+	scripts/scan.sh sbom
+
+demo-policy:
+	scripts/demo.sh policy

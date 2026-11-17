@@ -1,0 +1,9 @@
+# Root, writable filesystem, privilege escalation allowed, no limits: must be rejected.
+apiVersion: v1
+kind: Pod
+metadata: { name: policy-root, namespace: shop }
+spec:
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "3600"]

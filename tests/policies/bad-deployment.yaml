@@ -1,0 +1,12 @@
+# A Deployment with an unhardened pod template: must be rejected at apply time (Kyverno autogen).
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: policy-deploy, namespace: shop }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: policy-deploy } }
+  template:
+    metadata: { labels: { app: policy-deploy } }
+    spec:
+      containers:
+        - { name: web, image: nginx }

@@ -1,0 +1,10 @@
+# Only the admission controller: it is the part that enforces policies at `kubectl apply` time.
+# The background, reports and cleanup controllers are switched off to keep the footprint small on kind.
+backgroundController: { enabled: false }
+reportsController: { enabled: false }
+cleanupController: { enabled: false }
+admissionController:
+  container:
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits: { memory: 384Mi }

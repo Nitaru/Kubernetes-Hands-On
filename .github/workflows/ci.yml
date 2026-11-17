@@ -29,10 +29,26 @@ jobs:
           dockerfile: app/Dockerfile
           ignore: DL3018
 
+  scan:
+    # Fails the build on HIGH/CRITICAL CVEs that have a fix, misconfigurations, or committed secrets.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the image
+        run: docker build -t shop-api:dev app
+      - name: Scan the image, Dockerfile, chart and repository
+        run: scripts/scan.sh all
+      - name: Generate the SBOM
+        run: scripts/scan.sh sbom
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.cdx.json
+
   e2e:
     # Builds the whole platform on a fresh kind cluster and runs the smoke tests against it.
     runs-on: ubuntu-latest
-    needs: lint
+    needs: [lint, scan]
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4

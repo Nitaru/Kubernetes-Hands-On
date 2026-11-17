@@ -2,7 +2,7 @@
 
 A small production-style platform on a local multi-node Kubernetes cluster: ingress, autoscaling,
 zero-downtime rollouts, default-deny network policies, hardened pods, a stateful backend, and
-observability with SLO-based alerting.
+observability with SLO-based alerting, security scanning in CI and admission policies.
 Everything is built from scratch by one script and verified by tests that run in CI.
 
 ```
@@ -20,6 +20,8 @@ Everything is built from scratch by one script and verified by tests that run in
  │                                                                              │
  │   metrics-server  ──▶  kubectl top, HPA                                      │
 │                                                                              │
+│   Kyverno ──▶ admission policies: unhardened pods are refused at apply time  │
+│                                                                              │
 │   Prometheus ──scrapes──▶ shop-api /metrics   (ServiceMonitor, allowed by    │
 │      │  SLO recording + burn-rate alert rules  the NetworkPolicy)            │
 │      ├──▶ Alertmanager                                                       │
@@ -32,8 +34,9 @@ Everything is built from scratch by one script and verified by tests that run in
 Needs Docker, [kind](https://kind.sigs.k8s.io), `kubectl` and `helm`.
 
 ```sh
-make up        # cluster + Calico + Traefik + metrics-server + Prometheus/Grafana + app (a few minutes)
-make test      # 23 assertions against the live cluster
+make up        # cluster + Calico + Traefik + metrics-server + Prometheus/Grafana + app (about 9 minutes)
+make test      # 29 assertions against the live cluster
+make scan      # Trivy: image CVEs, Dockerfile and chart misconfigurations, secrets
 make grafana-password   # login for http://grafana.localtest.me:8080 (user: admin)
 curl http://shop.localtest.me:8080/api/products    # localtest.me resolves to 127.0.0.1
 make down
@@ -54,6 +57,8 @@ make down
 | **Stateful workload** | Redis as a StatefulSet with a PersistentVolumeClaim and append-only persistence. |
 | **Observability** | kube-prometheus-stack (pinned chart). The chart ships a `ServiceMonitor`, a `PrometheusRule` and a Grafana dashboard as code ([`dashboard.json`](charts/shop/files/dashboard.json), picked up by the Grafana sidecar). The default-deny policy has one explicit allow so only the `monitoring` namespace can scrape `/metrics`. |
 | **SLOs and alerting** | Two SLOs on the user-facing routes: 99% of requests are not 5xx, 95% finish within 500 ms. Alerts use multiwindow burn rates (page at 14.4x, ticket at 6x), written in [`slo-rules.yaml`](charts/shop/files/slo-rules.yaml) and unit-tested with `promtool` ([`tests`](tests/slo-rules.test.yaml), run in CI with no cluster). |
+| **Supply-chain scanning** | [`scripts/scan.sh`](scripts/scan.sh) runs Trivy on the image (HIGH/CRITICAL CVEs that have a fix), the Dockerfile and chart (misconfigurations) and the repo (secrets), and CI fails the build on any finding. It also produces a CycloneDX SBOM, uploaded as a CI artifact. The image is built in two stages so npm never reaches the runtime image. |
+| **Admission policies** | Kyverno `ValidatingPolicy` rules (CEL) enforce, in the `shop` namespace, what the chart already does: non-root, read-only filesystem, no privilege escalation, all capabilities dropped, seccomp, pinned image tags, requests and a memory limit. Bad pods and bad Deployments are rejected at `kubectl apply` with the rule that failed, and the chart's own pods are admitted. |
 | **Testing** | `scripts/smoke.sh` asserts cluster, workload, traffic and policy behaviour. CI runs lint, then builds the platform on a fresh kind cluster and runs it. |
 
 ## Prove it
@@ -65,6 +70,7 @@ make demo-autoscale  # load goes up, replicas follow, load stops, replicas come 
 make demo-netpol     # a pod in another namespace is blocked from the API and Redis
 make demo-drain      # drain a worker node; the PDB keeps the service up
 make demo-slo        # make every payment fail; watch the error budget burn and the page fire
+make demo-policy     # apply good and bad manifests; the API server refuses the bad ones
 ```
 
 The network policy demo includes a control target (an unprotected service that must answer) so
@@ -78,6 +84,17 @@ both settled near 50% within about 80 seconds, and `ShopAvailabilityFastBurn` fi
 (`ShopAvailabilitySlowBurn` went `pending`, waiting out its 15-minute hold). After payments were
 restored the alert resolved within minutes, once the 5-minute window cleared. That is the point of
 the two windows: the long one filters blips, the short one stops the page soon after recovery.
+
+### What the first scan found
+
+The first Trivy run failed the build with 1 CRITICAL and 28 HIGH findings, none of them in the app's own
+dependencies. Most were in `tar`, `glob`, `minimatch` and similar packages **bundled inside npm**, which
+ships in the `node:20-alpine` base image although the app never runs npm. The rest were stale Alpine
+packages (`libssl3`, `libcrypto3`, `zlib`, `musl`) with fixes already published. The Dockerfile now installs
+dependencies in a build stage, drops npm and corepack from the runtime stage, and runs `apk upgrade`.
+The rescan reports 0 HIGH and 0 CRITICAL, the app still passes every smoke test, and the SBOM lists 103
+components. I also checked that the scanners can fail: a Dockerfile without `USER` fails the config scan
+(`DS-0002`), and a fake GitHub token fails the secret scan.
 
 ## Things that went wrong, and what they taught me
 
@@ -109,6 +126,15 @@ the two windows: the long one filters blips, the short one stops the page soon a
   turned the Prometheus query into an error, which also "passed". The checks now require
   `status == "success"` and an actual dashboard uid, and I proved they can fail (the "no alert firing"
   check failed correctly while the demo alert was still active).
+- **Trivy's secret scan ignored my fake AWS key.** `AKIAIOSFODNN7EXAMPLE` is AWS's documented example key
+  and is allow-listed, so my first negative test "passed" for the wrong reason. A fake GitHub token
+  triggered it. Worth remembering when testing any scanner: prove it can fail with realistic input.
+- **Kyverno's `ClusterPolicy` is deprecated** in the version installed here (chart 3.10.0, Kyverno 1.20) in favour of
+  the CEL-based `ValidatingPolicy`, so the policies use the new API. Matching only Pods is enough because
+  Kyverno autogenerates the rules for Deployments and StatefulSets.
+- **Enforcing policies has an availability cost.** With `failurePolicy: Fail`, if Kyverno is down, new pods
+  in `shop` are refused. That is the secure choice and is noted in the policy file; a real cluster would
+  run several controller replicas.
 - **`helm --wait` does not wait for the Prometheus StatefulSet.** The operator creates it after Helm
   returns, so the smoke test waits for the pods itself.
 
@@ -117,14 +143,14 @@ the two windows: the long one filters blips, the short one stops the page soon a
 ```
 app/              Node.js shop API (Prometheus metrics, /health, /ready, graceful shutdown)
 charts/shop/      the Helm chart (files/: SLO rules and Grafana dashboard)
-tests/            promtool unit tests for the SLO alert rules
+tests/            promtool unit tests for the SLO rules, manifests the admission policies must accept or reject
 kind/cluster.yaml 3-node cluster, default CNI disabled
-platform/         values for Traefik, metrics-server and kube-prometheus-stack, the load generator
-scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh
-.github/          CI: helm lint, kubeconform (incl. CRD schemas), promtool, hadolint, then an end-to-end run on kind
+platform/         values for Traefik, metrics-server, kube-prometheus-stack and Kyverno; policies/; the load generator
+scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh, scan.sh
+.github/          CI: helm lint, kubeconform (incl. CRD schemas), promtool, hadolint, Trivy scans and SBOM, then an end-to-end run on kind
 ```
 
 ## Versions
 
 Kubernetes v1.37.0 (kind v0.33), Calico v3.31.0, Traefik chart 42.4.0, metrics-server chart 3.14.0,
-kube-prometheus-stack chart 93.3.1.
+kube-prometheus-stack chart 93.3.1, Kyverno chart 3.10.0, Trivy 0.76.2.

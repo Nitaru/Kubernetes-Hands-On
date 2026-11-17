@@ -55,5 +55,15 @@ check "SLI recording rule returns data"         retry_long sli_has_data
 check "no SLO alert is firing under normal traffic" nothing_firing
 check "Grafana serves the shop dashboard"       retry_long dashboard_up
 
+echo "admission policies (Kyverno)"
+# denied <manifest>: the API server must refuse it, and the refusal must come from an admission policy
+denied() { local out; out=$(kubectl apply --dry-run=server -f "$1" 2>&1) && return 1; grep -q "denied the request" <<<"$out"; }
+check "Kyverno admission controller is Ready" kubectl -n kyverno wait --for=condition=Ready pod -l app.kubernetes.io/component=admission-controller --timeout=120s
+check "3 policies are Ready"                  bash -c '[[ $(kubectl get validatingpolicy -o jsonpath="{.items[*].status.conditionStatus.ready}") == "true true true" ]]'
+check "a hardened pod is admitted"            kubectl apply --dry-run=server -f tests/policies/good-pod.yaml
+check "a root, unhardened pod is rejected"    denied tests/policies/bad-root-pod.yaml
+check "a :latest image is rejected"           denied tests/policies/bad-latest-tag.yaml
+check "an unhardened Deployment is rejected at apply time" denied tests/policies/bad-deployment.yaml
+
 printf '\n  %d passed, %d failed\n' "$pass" "$fail"
 (( fail == 0 ))

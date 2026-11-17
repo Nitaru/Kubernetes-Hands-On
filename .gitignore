@@ -2,3 +2,4 @@
 node_modules/
 *.tgz
 .kube/
+sbom.cdx.json

@@ -113,7 +113,16 @@ slo() {
   echo "  alerts resolve once the 5m window clears; Grafana: http://grafana.localtest.me:8080"
 }
 
+policy() {
+  say "Admission policies: the API server refuses manifests that weaken the hardening"
+  for f in good-pod bad-latest-tag bad-root-pod bad-deployment; do
+    printf '\n  %s\n' "$(sed -n '1s/^# //p' tests/policies/$f.yaml)"
+    printf '\033[2m  $ kubectl apply --dry-run=server -f tests/policies/%s.yaml\033[0m\n' "$f"
+    kubectl apply --dry-run=server -f "tests/policies/$f.yaml" 2>&1 | sed 's/^/    /; s/; Policy/;\n    Policy/g'  || true
+  done
+}
+
 case "${1:-}" in
-  selfheal) selfheal ;; rollout) rollout ;; autoscale) autoscale ;; netpol) netpol ;; drain) drain ;; slo) slo ;;
-  *) echo "usage: $0 selfheal|rollout|autoscale|netpol|drain|slo" >&2; exit 2 ;;
+  selfheal) selfheal ;; rollout) rollout ;; autoscale) autoscale ;; netpol) netpol ;; drain) drain ;; slo) slo ;; policy) policy ;;
+  *) echo "usage: $0 selfheal|rollout|autoscale|netpol|drain|slo|policy" >&2; exit 2 ;;
 esac
