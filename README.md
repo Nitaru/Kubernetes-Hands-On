@@ -54,7 +54,7 @@ make down
 | **Helm chart from scratch** | [`charts/shop`](charts/shop): Deployment, StatefulSet, Services, Ingress, HPA, PDB, Secret, NetworkPolicies, ServiceAccount. Linted and schema-validated in CI. |
 | **Health checks done right** | Separate `startup`, `readiness` and `liveness` probes. Neither liveness nor readiness depends on Redis: a Redis outage must not restart healthy pods, and (found by a chaos experiment) it must not take read-only endpoints out of the Service either. `/api/orders` answers 503 on its own when Redis is down. |
 | **Zero-downtime rollouts** | `maxUnavailable: 0`, a `preStop` sleep, and SIGTERM handling in the app that fails readiness and drains in-flight requests. |
-| **Autoscaling** | HPA on CPU with tuned scale-up/scale-down behaviour, driven by an in-cluster load generator. |
+| **Autoscaling** | HPA on CPU with tuned scale-up/scale-down behaviour, driven by an in-cluster load generator. Measured (`make loadtest`, [docs/loadtest.md](docs/loadtest.md)): 2 to 8 replicas in 68 s, back to 2 in 299 s after the load stopped, 0 failed requests. That load was far beyond what 8 pods can serve (CPU about 950% of the request), so p95 latency rose from 62 ms to over a second: it shows the speed of the scaling, not that latency stays within the SLO. |
 | **High availability** | Topology spread over nodes, a PodDisruptionBudget, and a node drain that keeps serving. |
 | **Network security** | Default-deny ingress and egress, then explicit allows: ingress controller to API, API to Redis, DNS. Enforced by Calico. |
 | **Pod hardening** | Non-root, read-only root filesystem, all capabilities dropped, seccomp `RuntimeDefault`, no service-account token mounted. |

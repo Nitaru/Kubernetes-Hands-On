@@ -1,0 +1,8 @@
+{
+  "first_scale_up_s_after_load": 21.5,
+  "first_new_replica_s_after_load": 37.1,
+  "max_replicas_s_after_load": 68.5,
+  "all_max_pods_ready_s_after_load": 67.9,
+  "scale_down_to_min_s_after_load_off": 298.8,
+  "peak_cpu_percent": 949
+}

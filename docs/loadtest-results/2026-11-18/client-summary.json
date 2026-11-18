@@ -1,0 +1,45 @@
+{
+  "before": {
+    "requests": 500,
+    "fault_errors": 0,
+    "fault_error_pct": 0.0,
+    "payment_502": 1,
+    "fault_errors_products": 0,
+    "fault_errors_orders": 0,
+    "p50_ms": 28.9,
+    "p95_ms": 61.8,
+    "p99_ms": 81.9,
+    "max_ms": 864.3
+  },
+  "during": {
+    "requests": 2560,
+    "fault_errors": 0,
+    "fault_error_pct": 0.0,
+    "payment_502": 15,
+    "fault_errors_products": 0,
+    "fault_errors_orders": 0,
+    "p50_ms": 188.4,
+    "p95_ms": 1104.4,
+    "p99_ms": 1981.4,
+    "max_ms": 4888.6
+  },
+  "after": {
+    "requests": 6377,
+    "fault_errors": 0,
+    "fault_error_pct": 0.0,
+    "payment_502": 36,
+    "fault_errors_products": 0,
+    "fault_errors_orders": 0,
+    "p50_ms": 31.6,
+    "p95_ms": 154.5,
+    "p99_ms": 506.1,
+    "max_ms": 1219.5
+  },
+  "fault_window_s": 128.0,
+  "first_fault_error_after_s": null,
+  "last_fault_error_after_s": null,
+  "outage_span_s": 0.0,
+  "longest_gap_without_a_successful_products_response_s": 0.3,
+  "burn_rate_during_fault_window": 0.0,
+  "fault_status_codes": {}
+}
