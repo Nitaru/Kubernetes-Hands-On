@@ -2,7 +2,7 @@
 # Chaos experiments against the running platform (GitOps install: `make up-gitops`).
 # The hypotheses are in docs/chaos-experiments.md, written before the first run.
 #
-#   scripts/chaos.sh podkill|drain|redis|baddeploy|netpol|all
+#   scripts/chaos.sh podkill|drain|redis|redisdown|baddeploy|netpol|all
 #   CHAOS_DATE=2026-11-18 scripts/chaos.sh redis      # where the raw results go (default: today)
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -124,6 +124,35 @@ redis() {
   finish redis
 }
 
+# ---------- 3b. redisdown (Redis gone for long enough to matter) ----------
+set_selfheal() {   # set_selfheal true|false: Argo CD's automatic drift correction on the shop app
+  kubectl -n argocd patch application shop --type merge \
+    -p "$(printf '{"spec":{"syncPolicy":{"automated":{"prune":true,"selfHeal":%s}}}}' "$1")" >/dev/null
+}
+redisdown() {
+  begin redisdown || return 1
+  # Argo CD's self-heal would put the replica back within seconds (see experiment 5), so switch it off for the
+  # duration, as an on-call engineer would, and always switch it back on.
+  trap 'set_selfheal true; kubectl -n $NS scale statefulset shop-redis --replicas=1 >/dev/null' RETURN
+  set_selfheal false
+  say "redisdown: self-heal is off; scale Redis to 0 for 45 s"
+  event fault
+  kubectl -n $NS scale statefulset shop-redis --replicas=0 2>&1 | tail -1
+  ( for i in $(seq 1 150); do
+      printf '%s api_ready=%s/%s redis_ready=%s products_http=%s\n' "$(now)" "$(api_ready)" "$(api_wanted)" "$(redis_ready)" \
+        "$(curl -s -m 2 -o /dev/null -w '%{http_code}' -H 'Host: shop.localtest.me' http://127.0.0.1:8080/api/products)"
+      sleep 1; done > "$DIR/timeline.txt" ) &
+  local tl=$!
+  sleep 45
+  event redis_restored
+  kubectl -n $NS scale statefulset shop-redis --replicas=1 2>&1 | tail -1
+  set_selfheal true
+  wait_until 240 "system steady again" steady
+  event recovered
+  wait $tl 2>/dev/null
+  finish redisdown
+}
+
 # ---------- 4. baddeploy (through Argo CD and the in-cluster Git server) ----------
 argo() { kubectl -n argocd get application shop -o jsonpath="$1" 2>/dev/null; }
 baddeploy() {
@@ -195,7 +224,7 @@ netpol() {
 }
 
 case "${1:-}" in
-  podkill) podkill ;; drain) drain ;; redis) redis ;; baddeploy) baddeploy ;; netpol) netpol ;;
-  all) for e in podkill drain redis baddeploy netpol; do $e || echo "experiment $e did not complete"; done ;;
-  *) echo "usage: $0 podkill|drain|redis|baddeploy|netpol|all" >&2; exit 2 ;;
+  podkill) podkill ;; drain) drain ;; redis) redis ;; redisdown) redisdown ;; baddeploy) baddeploy ;; netpol) netpol ;;
+  all) for e in podkill drain redis redisdown baddeploy netpol; do $e || echo "experiment $e did not complete"; done ;;
+  *) echo "usage: $0 podkill|drain|redis|redisdown|baddeploy|netpol|all" >&2; exit 2 ;;
 esac

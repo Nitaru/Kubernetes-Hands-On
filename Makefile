@@ -1,4 +1,4 @@
-.PHONY: chaos chaos-podkill chaos-drain chaos-redis chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -56,6 +56,8 @@ chaos-drain:
 	scripts/chaos.sh drain
 chaos-redis:
 	scripts/chaos.sh redis
+chaos-redisdown:
+	scripts/chaos.sh redisdown
 chaos-baddeploy:
 	scripts/chaos.sh baddeploy
 chaos-netpol:

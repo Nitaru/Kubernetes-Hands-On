@@ -72,6 +72,13 @@ about 15 s of Redis returning (probe period 5 s plus the client reconnecting). T
 45 s of failures is about 1.25% of a 1-hour window against a 14.4% threshold. If this is right, readiness couples a
 read-only endpoint to a dependency it does not use.
 
+**Run 1 did not test this, and why.** I scaled the StatefulSet to 0, and Argo CD's self-heal put the replica back within
+seconds, so Redis was down for about 7 s, shorter than the two failed readiness probes. That is a finding of its own:
+under GitOps a manual `kubectl scale` is undone almost at once (see also experiment 5). The raw data is kept in
+`docs/chaos-results/2026-11-18/redisdown-run1-selfheal-reverted-it/`. Run 2 turns self-heal off for the duration, which
+is what an on-call engineer would do in a real incident to stop Argo fighting a manual change, and turns it back on
+afterwards. The hypothesis above is unchanged.
+
 ### 4. `baddeploy`: ship a broken release through Git and roll it back through Git
 
 Commit a change pointing the image at a tag that does not exist to the in-cluster Git server, let Argo CD sync it, then
