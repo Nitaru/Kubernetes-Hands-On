@@ -36,7 +36,7 @@ jobs:
       - name: Build and push
         id: image
         run: |
-          image="ghcr.io/${GITHUB_REPOSITORY,,}/shop-api"
+          image="ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/shop-api"
           docker build --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" -t "$image:$GITHUB_SHA" app
           docker push "$image:$GITHUB_SHA"
           echo "repository=$image" >> "$GITHUB_OUTPUT"
