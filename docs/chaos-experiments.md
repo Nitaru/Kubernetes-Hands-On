@@ -61,17 +61,22 @@ Commit a change pointing the image at a tag that does not exist to the in-cluste
 `git revert` it.
 
 **Hypothesis.** The new pod cannot pull its image and never becomes Ready, and because `maxUnavailable` is 0 the old
-pods keep serving, so users see **zero fault errors**. Argo CD reports the app as not Healthy (Progressing, then
-Degraded). The revert restores Healthy within **3 minutes**, Argo's default polling interval.
+pods keep serving, so users see **zero fault errors**. Argo CD notices within about a minute (it polls Git every 30 s
+here, see `platform/argocd-values.yaml`) and reports the app as not Healthy. The revert restores Healthy within
+**2 minutes**.
 
 ### 5. `netpol`: someone deletes the default-deny NetworkPolicy by hand
 
-`kubectl delete networkpolicy default-deny -n shop` while a probe pod in another namespace tries to reach the API
-and Redis every second.
+`kubectl delete networkpolicy default-deny -n shop`, while a probe pod in another namespace tries to reach the API and
+Redis every second, and a probe inside the Redis pod tries to open a connection to Traefik every second.
 
-**Hypothesis.** Argo CD's self-heal puts the policy back in **under 30 s**. During that gap the probe **can** reach the
-API and Redis (the security control really is gone), and after it is restored it cannot. The exposure window is the
-number to report.
+**Hypothesis (revised before running).** My first draft said the probe pod would reach the API and Redis during the gap.
+Reading `charts/shop/templates/networkpolicy.yaml` shows that is wrong: the `api` and `redis` policies still select
+those pods, so they stay isolated even without `default-deny`. What `default-deny` really adds is (a) a lock on Redis's
+**egress**, because the `redis` policy only covers ingress, and (b) a deny for any pod that no other policy selects.
+So I expect: the other-namespace probe stays **blocked throughout**, the Redis pod's outbound connection to Traefik
+**opens** while the policy is missing and closes again after, and Argo CD's self-heal restores the policy in
+**under 60 s** (30 s polling plus a sync). The exposure window is the number to report.
 
 ## What counts as done
 
