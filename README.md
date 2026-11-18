@@ -198,3 +198,7 @@ scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh, sc
 
 Kubernetes v1.37.0 (kind v0.33), Calico v3.31.0, Traefik chart 42.4.0, metrics-server chart 3.14.0,
 kube-prometheus-stack chart 93.3.1, Kyverno chart 3.10.0, Argo CD chart 10.18.0 (Argo CD v3.6), Trivy 0.76.2.
+
+## License
+
+MIT, see [LICENSE](LICENSE).
