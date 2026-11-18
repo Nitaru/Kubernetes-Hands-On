@@ -1,4 +1,4 @@
-.PHONY: redis-restore-drill backup-drill loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: rollout-demo redis-restore-drill backup-drill loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -72,3 +72,6 @@ backup-drill:      ## back up Redis's volume with Velero and restore it into a s
 
 redis-restore-drill: ## back up Redis with redis-cli --rdb, delete its volume, restore, compare (docs/backup-restore.md part 2)
 	scripts/redis-restore-drill.sh
+
+rollout-demo:      ## canary releases with an automatic analysis: a good one is promoted, a bad one aborts itself (docs/progressive-delivery.md)
+	scripts/rollout-demo.sh
