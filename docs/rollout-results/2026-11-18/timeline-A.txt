@@ -1,0 +1,33 @@
+1794972031.238 phase=Progressing abort= step=0 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972036.486 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972041.826 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972047.080 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972052.332 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972057.593 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972062.868 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972068.126 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972073.375 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972078.661 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972083.916 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972089.207 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972094.495 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972099.729 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972104.974 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972110.235 phase=Progressing abort= step=2 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972115.486 phase=Paused abort= step=4 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972120.772 phase=Paused abort= step=4 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972126.045 phase=Paused abort= step=4 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972131.289 phase=Paused abort= step=4 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972136.546 phase=Paused abort= step=4 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972141.800 phase=Paused abort= step=4 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794972147.048 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972152.403 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972157.688 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972162.959 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972168.212 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972173.454 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972178.705 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972183.948 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972189.193 phase=Progressing abort= step=5 canary_hash=9f74687b6 stable=755b8c6957 msg=more replicas need to be updated
+1794972194.438 phase=Progressing abort= step=6 canary_hash=9f74687b6 stable=755b8c6957 msg=old replicas are pending termination
+1794972199.759 phase=Healthy abort= step=6 canary_hash=9f74687b6 stable=9f74687b6 msg=

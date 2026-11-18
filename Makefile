@@ -11,6 +11,7 @@ lint:              ## offline checks, same as CI
 	helm lint charts/shop
 	helm template shop charts/shop -n shop | kubeconform -strict -summary -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 	helm template shop charts/shop -n shop --set redisPassword.source=externalSecrets | kubeconform -ignore-missing-schemas -strict -summary -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+	helm template shop charts/shop -n shop --set redisPassword.source=externalSecrets --set rollout.enabled=true | kubeconform -ignore-missing-schemas -strict -summary -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
 	scripts/test-rules.sh
 test:              ## smoke test against the running cluster
 	scripts/smoke.sh

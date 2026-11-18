@@ -131,6 +131,14 @@ deleting the default-deny policy was undone by Argo CD in about 2 s. One predict
 Postmortem, fix and re-measurement: [docs/postmortems](docs/postmortems/2026-11-18-redis-outage-takes-down-browsing.md).
 Not covered: a multi-machine cluster, realistic network latency, load above about 20 requests a second, and most runs are a single run.
 
+## Progressive delivery
+
+[docs/progressive-delivery.md](docs/progressive-delivery.md), with predictions written first. With `rollout.enabled` the chart renders an Argo Rollouts canary
+instead of the Deployment (off by default; the default render is byte-identical to before). `make rollout-demo` pushes two releases through Git under
+steady load: a good one was promoted by the analysis in 175 s with no extra errors, a bad one (every order fails) was **aborted by the analysis after
+92 s** with 21% of orders failed and no failed product request, without anyone running a command. Not covered: a comparison with a plain rolling update,
+a real traffic router (a canary weight here is a replica ratio), or more than one run of each release.
+
 ## Backup and restore
 
 [docs/backup-restore.md](docs/backup-restore.md), with predictions written first. `make redis-restore-drill` backs up Redis with `redis-cli --rdb`,
