@@ -65,3 +65,25 @@ Predictions, written before the first cluster run:
 
 Not claimed: backups of anything other than Redis's data, restore time at real data sizes, an off-cluster copy of the dump (it is copied to the
 machine running the drill and not kept), or encryption of the dump.
+
+## Part 2 result (2026-11-18, one run)
+
+Raw output: `docs/backup-results/2026-11-18-redis-rdb/` (`before.txt`, `after.txt`, `summary.json`).
+
+| Prediction | Measured | Verdict |
+|---|---|---|
+| 1. Dump under 5 s and a few KB | **5.5 s** (this includes the `kubectl exec` and copying the file out, which I did not time separately), **289 bytes** | Size confirmed, time **just missed** |
+| 2. Restored numbers identical | `next_id` 7242, keyboard 39, mouse 7203, revenue 138768, **identical** before and after | Confirmed |
+| 3. Delete to verified under 3 minutes | **25.4 s** | Confirmed, well inside |
+| 4. Products keep working, orders return 503, API pods not restarted | `GET /api/products` 200, 200, 200 and `POST /api/orders` 503, 503, 503 while Redis was gone. API pods: 0 restarts, created hours before the drill | Confirmed |
+| 5. Fails loudly if any number differs | The same comparison made the part 1 run print DIFFERENT and exit 1. Part 2's own failing path was not exercised: it ran once and passed | Supported by part 1, not tested here |
+
+**The point of prediction 4** is the payoff of the earlier Redis postmortem: because readiness no longer depends on Redis, losing the whole volume cost
+orders for under half a minute and browsing nothing.
+
+**What this drill does not cover:** the dump is copied to the machine running the drill and not kept, so there is no off-cluster copy;
+the dataset is 289 bytes, so it says nothing about restore time for real data; and it is Redis only. The Kubernetes objects are in Git.
+
+**Two silent failures it found on the way**, both a success status with no data: Velero's `Completed` backup of a `hostPath` volume (part 1),
+and Redis started with append-only mode on and only an RDB file present (an empty dataset, no error). The restore script does the
+only sequence that worked: load the RDB with append-only off, turn it on, let Redis write its own files, then start normally.

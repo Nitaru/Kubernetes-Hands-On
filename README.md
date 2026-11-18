@@ -131,6 +131,14 @@ deleting the default-deny policy was undone by Argo CD in about 2 s. One predict
 Postmortem, fix and re-measurement: [docs/postmortems](docs/postmortems/2026-11-18-redis-outage-takes-down-browsing.md).
 Not covered: a multi-machine cluster, realistic network latency, load above about 20 requests a second, and most runs are a single run.
 
+## Backup and restore
+
+[docs/backup-restore.md](docs/backup-restore.md), with predictions written first. `make redis-restore-drill` backs up Redis with `redis-cli --rdb`,
+deletes its volume, restores the dump into a fresh one and compares: identical, 25 s from deleting the volume to verified, products kept
+answering throughout. The first approach, Velero, did **not** work on kind: it reported `Completed` and backed up nothing that mattered, because it
+cannot read the `hostPath` volumes kind's default storage creates (`make backup-drill` now fails loudly on that). Not covered: an off-cluster copy of the
+dump, real data sizes, or anything other than Redis.
+
 ## Things that went wrong, and what they taught me
 
 - **kind's default CNI ignores NetworkPolicies.** Policies apply without error and do nothing.
@@ -170,6 +178,9 @@ Not covered: a multi-machine cluster, realistic network latency, load above abou
 - **Enforcing policies has an availability cost.** With `failurePolicy: Fail`, if Kyverno is down, new pods
   in `shop` are refused. That is the secure choice and is noted in the policy file; a real cluster would
   run several controller replicas.
+- **My first backup said it succeeded and contained no data.** Velero's file-level backup skips `hostPath` volumes, which is what kind's storage creates, and still
+  reports `Completed`; the restore then restored an empty disk. A second silent failure: Redis with append-only mode on ignores an RDB file and starts empty. Both
+  are written up in the backup doc, and the drill now checks the data instead of trusting a status.
 - **Readiness depended on Redis, so a Redis outage took product browsing down too.** Found by experiment 3b, fixed and re-measured
   (602 failed product requests before, 0 after); see the postmortem. My first test of it, a 3-second Redis restart, showed nothing
   because it was shorter than the probe window.
