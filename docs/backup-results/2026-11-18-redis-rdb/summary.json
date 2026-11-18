@@ -1,0 +1,8 @@
+{
+  "restored_data": "IDENTICAL",
+  "dump_bytes": 289,
+  "dump_seconds": 5.5,
+  "delete_to_verified_seconds": 25.4,
+  "products_codes_while_redis_gone": "200 200 200 ",
+  "orders_codes_while_redis_gone": "503 503 503 "
+}

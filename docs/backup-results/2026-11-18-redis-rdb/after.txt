@@ -1,0 +1,4 @@
+next_id=7242
+by_product.keyboard=39
+by_product.mouse=7203
+revenue=138768
