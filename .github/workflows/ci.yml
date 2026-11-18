@@ -9,8 +9,8 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: azure/setup-helm@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Install kubeconform
         run: |
           curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz | tar xz
@@ -24,12 +24,12 @@ jobs:
       - name: Unit-test the SLO alert rules
         run: scripts/test-rules.sh
       - name: Lint the Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: app/Dockerfile
           ignore: DL3018
       - name: Lint the Git server Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
         with:
           dockerfile: platform/gitops/Dockerfile
           ignore: DL3018
@@ -38,14 +38,14 @@ jobs:
     # Fails the build on HIGH/CRITICAL CVEs that have a fix, misconfigurations, or committed secrets.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Build the image
         run: docker build -t shop-api:dev app
       - name: Scan the image, Dockerfile, chart and repository
         run: scripts/scan.sh all
       - name: Generate the SBOM
         run: scripts/scan.sh sbom
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: sbom
           path: sbom.cdx.json
@@ -61,10 +61,10 @@ jobs:
       matrix:
         mode: [helm, gitops]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           fetch-depth: 0   # the in-cluster Git server is seeded from this repository's history
-      - uses: azure/setup-helm@v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4 # v4
       - name: Build the platform
         run: |
           if [ "${{ matrix.mode }}" = gitops ]; then export GITOPS=1; fi
