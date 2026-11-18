@@ -29,14 +29,22 @@ firing() {
   kubectl get --raw "$PROM/query?query=ALERTS%7Balertname%3D~%22Shop.*%22%2Calertstate%3D%22firing%22%7D" 2>/dev/null \
     | jq -r '[.data.result[].metric.alertname] | unique | join(", ") | if . == "" then "none" else . end' 2>/dev/null || echo "unknown"
 }
-api_ready()  { kubectl -n $NS get deploy shop-api -o jsonpath='{.status.readyReplicas}' 2>/dev/null; }
+# Count pods, not the Deployment's status: right after a forced delete the status still shows the old numbers.
+pods_ready() {   # pods_ready <label selector>: pods that are Ready and not terminating
+  kubectl -n $NS get pods -l "$1" -o json 2>/dev/null \
+    | jq '[.items[] | select(.metadata.deletionTimestamp == null) | select(any(.status.conditions[]?; .type == "Ready" and .status == "True"))] | length' 2>/dev/null || echo 0
+}
+pods_total() {   # pods_total <label selector>: pods that are not terminating
+  kubectl -n $NS get pods -l "$1" -o json 2>/dev/null | jq '[.items[] | select(.metadata.deletionTimestamp == null)] | length' 2>/dev/null || echo 0
+}
+api_ready()  { pods_ready $API_SEL; }
 api_wanted() { kubectl -n $NS get deploy shop-api -o jsonpath='{.spec.replicas}' 2>/dev/null; }
-redis_ready() { kubectl -n $NS get pod -l $REDIS_SEL -o jsonpath='{.items[0].status.containerStatuses[0].ready}' 2>/dev/null; }
+redis_ready() { [[ $(pods_ready $REDIS_SEL) == 1 && $(pods_total $REDIS_SEL) == 1 ]] && echo true || echo false; }
 products_ok() { [[ $(curl -s -m 2 -o /dev/null -w '%{http_code}' -H 'Host: shop.localtest.me' http://127.0.0.1:8080/api/products) == 200 ]]; }
 steady() {   # everything is up and serving, three answers in a row
-  local want ready
-  want=$(api_wanted); ready=$(api_ready)
-  [[ -n $want && ${ready:-0} -ge 2 && ${ready:-0} == "$want" && $(redis_ready) == true ]] || return 1
+  local want ready total
+  want=$(api_wanted); ready=$(pods_ready $API_SEL); total=$(pods_total $API_SEL)
+  [[ -n $want && $want -ge 2 && $ready == "$want" && $total == "$want" && $(redis_ready) == true ]] || return 1
   products_ok && products_ok && products_ok
 }
 wait_until() {   # wait_until <seconds> <description> <command...>: poll once a second, print how long it took
