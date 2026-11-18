@@ -30,7 +30,6 @@ kubectl apply -f platform/loadgen.yaml >/dev/null
 python3 scripts/chaos-load.py run --out "$DIR/requests.csv" --stop-file "$DIR/STOP" --rate 20 &
 CLIENT=$!
 echo "epoch,hpa_current,hpa_desired,cpu_percent,ready_pods,phase" > "$DIR/timeline.csv"
-PHASE=baseline
 sampler() {
   while [[ ! -f "$DIR/STOP" ]]; do
     printf '%s,%s,%s,%s,%s,%s\n' "$(now)" "$(hpa '{.status.currentReplicas}')" "$(hpa '{.status.desiredReplicas}')" \
