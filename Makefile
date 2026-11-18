@@ -1,4 +1,4 @@
-.PHONY: chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -62,3 +62,6 @@ chaos-baddeploy:
 	scripts/chaos.sh baddeploy
 chaos-netpol:
 	scripts/chaos.sh netpol
+
+loadtest:          ## measure the autoscaling: predictions in docs/loadtest.md, needs a running cluster
+	scripts/loadtest.sh
