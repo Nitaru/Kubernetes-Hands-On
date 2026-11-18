@@ -77,18 +77,25 @@ analysis_summary() {   # the measurements the analysis took, for the record
   kubectl -n $NS get analysisrun -o json | jq -r '.items[] | [.metadata.name, .status.phase, ([.status.metricResults[]?.measurements[]? | .value] | join(","))] | @tsv' | tail -4
 }
 aborted() { [[ $(ro '{.status.abort}') == true ]]; }
+# Right after a push the Rollout still reports the OLD revision as Healthy until Argo CD has synced the new template, so wait until the
+# new revision has registered before judging anything (an early version of this script did not, and "promoted in 0.4 s" was nonsense).
+new_revision() { local before=$1; for _ in $(seq 1 120); do [[ $(ro '{.status.currentPodHash}') != "$before" ]] && return 0; sleep 1; done; return 1; }
 
 say "release A (good): the simulated payment failure rate 3% -> 2%, pushed through Git"
+BEFORE=$(ro '{.status.currentPodHash}')
 set_rate 0.02; "${G[@]}" commit -qam "Release A: payment failure rate 2%"; "${G[@]}" push -q origin HEAD:main
 event A_push
+new_revision "$BEFORE" || echo "  WARNING: the new revision never registered"
 if watch_rollout A 420 rollout_healthy; then A_OK=1; else A_OK=0; fi
 event A_done
 echo "  release A: promoted=$A_OK; analysis runs:"; analysis_summary | tee "$DIR/analysis-A.txt" | sed 's/^/    /'
 sleep 10
 
 say "release B (bad): payment failure rate 100%, pushed through Git; nobody runs a command from here on"
+BEFORE=$(ro '{.status.currentPodHash}')
 set_rate 1; "${G[@]}" commit -qam "Release B: payment failure rate 100% (bad)"; "${G[@]}" push -q origin HEAD:main
 event B_push
+new_revision "$BEFORE" || echo "  WARNING: the new revision never registered"
 if watch_rollout B 300 aborted; then B_ABORTED=1; else B_ABORTED=0; fi
 event B_aborted
 echo "  release B: aborted by the analysis=$B_ABORTED; analysis runs:"; analysis_summary | tee "$DIR/analysis-B.txt" | sed 's/^/    /'
