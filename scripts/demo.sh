@@ -169,7 +169,7 @@ gitops() {
   wait_for "HPA maxReplicas is back to 8" 120 '[[ $(hpa_max) == 8 ]]'
   printf '  Redis password unchanged across both syncs: %s\n' "$([[ $(redis_pw) == "$pw_before" ]] && echo yes || echo "NO (before $pw_before, after $(redis_pw))")"
   printf '  Argo: %s / %s\n' "$(app '{.status.sync.status}')" "$(app '{.status.health.status}')"
-  kill $pf 2>/dev/null; wait $pf 2>/dev/null
+  kill $pf 2>/dev/null; wait $pf 2>/dev/null || true   # wait reports 143 for the process we just killed
 }
 
 case "${1:-}" in
