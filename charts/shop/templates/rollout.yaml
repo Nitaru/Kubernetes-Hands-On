@@ -1,0 +1,35 @@
+{{- if .Values.rollout.enabled }}
+# Canary release with an automatic check (docs/progressive-delivery.md). There is no traffic router on kind, so a weight is a
+# replica ratio: the share of pods running the new version, which is roughly the share of requests it serves.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: shop-api
+  labels: {{- include "shop.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.api.replicas }}
+  {{- end }}
+  selector:
+    matchLabels: {{- include "shop.api.selector" . | nindent 6 }}
+  strategy:
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0
+      steps:
+        - setWeight: 25
+        - pause: { duration: {{ .Values.rollout.pauseSeconds }}s }
+        - analysis:
+            templates: [{ templateName: shop-canary-health }]
+            args:
+              - name: canary-hash
+                valueFrom: { podTemplateHashValue: Latest }
+        - setWeight: 50
+        - pause: { duration: {{ .Values.rollout.pauseSeconds }}s }
+        - analysis:
+            templates: [{ templateName: shop-canary-health }]
+            args:
+              - name: canary-hash
+                valueFrom: { podTemplateHashValue: Latest }
+  template: {{- include "shop.api.podTemplate" . | nindent 4 }}
+{{- end }}
