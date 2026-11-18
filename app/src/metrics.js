@@ -43,4 +43,4 @@ function middleware(req, res, next) {
   next();
 }
 
-module.exports = { register, middleware, ordersCreated, orderValue, paymentFailures };
+module.exports = { client, register, middleware, ordersCreated, orderValue, paymentFailures };

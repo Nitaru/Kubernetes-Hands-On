@@ -52,7 +52,7 @@ make down
 | Topic | How |
 |---|---|
 | **Helm chart from scratch** | [`charts/shop`](charts/shop): Deployment, StatefulSet, Services, Ingress, HPA, PDB, Secret, NetworkPolicies, ServiceAccount. Linted and schema-validated in CI. |
-| **Health checks done right** | Separate `startup`, `readiness` and `liveness` probes. Liveness never depends on Redis (a Redis outage must not restart healthy pods); readiness does. |
+| **Health checks done right** | Separate `startup`, `readiness` and `liveness` probes. Neither liveness nor readiness depends on Redis: a Redis outage must not restart healthy pods, and (found by a chaos experiment) it must not take read-only endpoints out of the Service either. `/api/orders` answers 503 on its own when Redis is down. |
 | **Zero-downtime rollouts** | `maxUnavailable: 0`, a `preStop` sleep, and SIGTERM handling in the app that fails readiness and drains in-flight requests. |
 | **Autoscaling** | HPA on CPU with tuned scale-up/scale-down behaviour, driven by an in-cluster load generator. |
 | **High availability** | Topology spread over nodes, a PodDisruptionBudget, and a node drain that keeps serving. |
@@ -122,6 +122,15 @@ components. I also checked that the scanners can fail: a Dockerfile without `USE
   the new tag to this repository, and Argo would roll it out.
 - `make up` and `make up-gitops` are alternatives for the same release name; switch with `make down` first.
 
+## Chaos experiments
+
+Five failures against the running platform, each with a hypothesis committed before the run: [docs/chaos-experiments.md](docs/chaos-experiments.md)
+(`make chaos`, needs `make up-gitops`). Killing a pod, draining a node and shipping a broken release through Git cost zero failed requests;
+deleting the default-deny policy was undone by Argo CD in about 2 s. One prediction was refuted and one found a real flaw: with Redis down for
+45 s, readiness took the whole API out of the Service and product browsing returned 503 although it never touches Redis.
+Postmortem, fix and re-measurement: [docs/postmortems](docs/postmortems/2026-11-18-redis-outage-takes-down-browsing.md).
+Not covered: a multi-machine cluster, realistic network latency, load above about 20 requests a second, and most runs are a single run.
+
 ## Things that went wrong, and what they taught me
 
 - **kind's default CNI ignores NetworkPolicies.** Policies apply without error and do nothing.
@@ -161,6 +170,9 @@ components. I also checked that the scanners can fail: a Dockerfile without `USE
 - **Enforcing policies has an availability cost.** With `failurePolicy: Fail`, if Kyverno is down, new pods
   in `shop` are refused. That is the secure choice and is noted in the policy file; a real cluster would
   run several controller replicas.
+- **Readiness depended on Redis, so a Redis outage took product browsing down too.** Found by experiment 3b, fixed and re-measured
+  (602 failed product requests before, 0 after); see the postmortem. My first test of it, a 3-second Redis restart, showed nothing
+  because it was shorter than the probe window.
 - **Argo CD showed the app as `Progressing` forever.** Everything was synced and every pod was running; the
   cause was the Ingress, which Argo calls healthy only once it has a load-balancer address, and Traefik on
   kind (a NodePort) never gets one. A custom health check in the Argo values accepts the Ingress. A cluster

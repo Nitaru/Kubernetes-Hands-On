@@ -9,6 +9,12 @@ const PRODUCTS = { keyboard: 49, mouse: 19, monitor: 199, headset: 79 };
 
 const redis = createClient({ url: process.env.REDIS_URL || "redis://redis:6379" });
 redis.on("error", (err) => log("error", "redis error", { error: err.message }));
+new metrics.client.Gauge({
+  name: "shop_redis_up",
+  help: "1 when the Redis client is connected and ready, 0 otherwise",
+  registers: [metrics.register],
+  collect() { this.set(redis.isReady ? 1 : 0); },
+});
 
 const app = express();
 app.use(express.json());
@@ -26,11 +32,13 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // otherwise a Redis outage would make Kubernetes restart healthy pods.
 app.get("/health", (req, res) => res.json({ status: "ok" }));
 
-// Readiness: only receive traffic when Redis is reachable and we are not shutting down.
+// Readiness: only receive traffic while we are not shutting down. Redis is deliberately NOT part of this check.
+// Only /api/orders needs Redis, and it already answers 503 on its own when Redis is down. If readiness also failed,
+// a Redis outage would take every pod out of the Service and break /api/products, which never touches Redis
+// (chaos experiment 3b: docs/chaos-experiments.md). Redis health is reported in the body and in shop_redis_up.
 app.get("/ready", (req, res) => {
   if (shuttingDown) return res.status(503).json({ status: "shutting down" });
-  if (!redis.isReady) return res.status(503).json({ status: "redis unavailable" });
-  res.json({ status: "ready" });
+  res.json({ status: "ready", redis: redis.isReady ? "up" : "down" });
 });
 
 app.get("/metrics", async (req, res) => {

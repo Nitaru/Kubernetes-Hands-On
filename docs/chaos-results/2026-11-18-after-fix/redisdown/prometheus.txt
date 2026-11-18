@@ -1,0 +1,4 @@
+5-minute error ratio now:        0.036175556286330054
+worst 5-minute error ratio seen: 0.037833059914559014
+5xx responses the app counted:   274.73718716489344
+SLO alerts firing:               none

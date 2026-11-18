@@ -119,3 +119,20 @@ make orders survive a Redis outage, it stops the outage from also taking down br
 
 Each experiment: the hypothesis above, the measured result next to it, and whether I was right. At least one action
 item from the results is fixed and the same experiment re-measured (see the postmortem in `docs/postmortems/`).
+
+## Results (2026-11-18, one run each unless stated)
+
+Each hypothesis above, next to what was measured. Raw requests, timelines and summaries are in `docs/chaos-results/2026-11-18/`.
+
+| # | Hypothesis | Measured | Verdict |
+|---|---|---|---|
+| 1 `podkill` | Under 1% fault errors, replacement Ready in under 30 s, no alert | **0** fault errors (73 requests in a 3.7 s window), replacement Ready after about 4 s, no alert. One run, so a lucky gap with no request in flight is possible | Confirmed (n = 1) |
+| 2 `drain` | Zero fault errors, all pods Ready within 60 s | **0** fault errors over 94 s (1881 requests), all API pods Ready after about **79 s** | Errors confirmed, time **missed**; I did not investigate why it took 79 s |
+| 3 `redis` (pod delete) | Product requests fail for 20 to 60 s | **0** product failures, 4 failed orders in about 1 s. Redis was back in about 3 s, so readiness never flipped | **Refuted** (timing), which led to 3b |
+| 3b `redisdown` | About 35 to 60 s outage including products, back within 15 s of Redis, no page | Products 503 from +9.4 s to +46.9 s (**602 failed product requests**), 75.3% errors in the window, all pods Ready 6.1 s after Redis, no alert | Confirmed. Run 1 was invalid (self-heal restored Redis), kept for the record |
+| 4 `baddeploy` | Zero errors, Argo notices within about a minute, Healthy within 2 min of the revert | **0** fault errors over 151.5 s (3031 requests), Argo noticed after about 32 s, the new pod sat in `ErrImagePull`/`ImagePullBackOff`, the app showed Progressing (I did not wait the 10 minutes it takes to reach Degraded), Healthy and Synced **28 s** after the revert | Confirmed |
+| 5 `netpol` | Probe from another namespace stays blocked, Redis egress opens in the gap, restored in under 60 s | Probe **blocked in 6 of 6** samples, policy restored after about **2 s**, Redis egress **never seen open**: the gap was shorter than my 1 s probe | Partly confirmed, partly **inconclusive** |
+
+**After the fix** (`docs/chaos-results/2026-11-18-after-fix/`): same experiment as 3b. Product requests failed: **0** (was 602).
+Orders failed: 182 (was 198). Error ratio in the window: 19.5% (was 75.3%), as predicted. API pods stayed Ready 2 of 2.
+Full write-up: [`postmortems/2026-11-18-redis-outage-takes-down-browsing.md`](postmortems/2026-11-18-redis-outage-takes-down-browsing.md).
