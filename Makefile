@@ -1,4 +1,4 @@
-.PHONY: up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: chaos chaos-podkill chaos-drain chaos-redis chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -47,3 +47,16 @@ argocd-password:   ## print the Argo CD admin password (user: admin, http://argo
 	@kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath='{.data.password}' | base64 -d; echo
 demo-gitops:
 	scripts/demo.sh gitops
+
+chaos:             ## all five chaos experiments, needs `make up-gitops` (hypotheses: docs/chaos-experiments.md)
+	scripts/chaos.sh all
+chaos-podkill:
+	scripts/chaos.sh podkill
+chaos-drain:
+	scripts/chaos.sh drain
+chaos-redis:
+	scripts/chaos.sh redis
+chaos-baddeploy:
+	scripts/chaos.sh baddeploy
+chaos-netpol:
+	scripts/chaos.sh netpol
