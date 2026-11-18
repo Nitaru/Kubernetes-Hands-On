@@ -1,12 +1,12 @@
 # Build stage: npm is needed to install dependencies, and only here.
-FROM node:20-alpine AS deps
+FROM node:26-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
 # Runtime stage: no npm, no corepack. They are not needed to run the app, and the npm that ships in
 # the base image bundles packages (tar, glob, minimatch...) that carry HIGH/CRITICAL CVEs.
-FROM node:20-alpine
+FROM node:26-alpine
 # Pick up OS security fixes published since the base image was built (libssl, zlib, musl...).
 # Not pinned on purpose: the point is to take whatever fixed version exists today.
 RUN apk upgrade --no-cache \
