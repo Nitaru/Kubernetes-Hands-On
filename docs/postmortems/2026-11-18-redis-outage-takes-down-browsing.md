@@ -25,6 +25,10 @@ inside the 45 s outage window plus the recovery:
 | Longest stretch with no successful product response | 38.1 s | 0.3 s |
 | API pods Ready during the outage | 0 of 2 | 2 of 2 |
 
+![Failed requests per second during a 45 s Redis outage, before and after the fix](../img/redisdown-before-after.svg)
+
+(Drawn from the raw request logs by `scripts/chaos-chart.py`.)
+
 Orders still fail while Redis is down. The fix was never meant to change that. It stops the outage from also taking browsing down.
 
 ## Timeline (before the fix, seconds after Redis was scaled to 0)
