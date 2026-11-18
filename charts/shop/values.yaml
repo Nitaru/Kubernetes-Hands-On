@@ -38,3 +38,10 @@ monitoring:
   enabled: true            # ServiceMonitor, SLO rules and dashboard; needs kube-prometheus-stack installed first
   dashboard: true
   scrapeInterval: 15s
+
+redisPassword:
+  # helm: the chart generates the password itself (randAlphaNum) and keeps it across upgrades with `lookup`.
+  #       Works with helm install/upgrade, but not under Argo CD, which renders with `helm template` and cannot look anything up.
+  # externalSecrets: the External Secrets Operator generates it once and owns the Secret. Needs the operator and its CRDs installed first
+  #       (scripts/up.sh does that for the GitOps install). The chart then ships no password at all, in any form.
+  source: helm

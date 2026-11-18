@@ -16,6 +16,7 @@ METRICS_CHART=3.14.0
 PROM_CHART=93.3.1
 KYVERNO_CHART=3.10.0
 ARGOCD_CHART=10.18.0
+ESO_CHART=2.15.0
 IMAGE=shop-api:dev
 GITOPS=${GITOPS:-0}
 GITOPS_REPO=${GITOPS_REPO:-}                  # empty = use the in-cluster Git server
@@ -43,7 +44,8 @@ helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/ -
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts --force-update >/dev/null
 helm repo add kyverno https://kyverno.github.io/kyverno/ --force-update >/dev/null
 helm repo add argo https://argoproj.github.io/argo-helm --force-update >/dev/null
-helm repo update traefik metrics-server prometheus-community kyverno argo >/dev/null
+helm repo add external-secrets https://charts.external-secrets.io --force-update >/dev/null
+helm repo update traefik metrics-server prometheus-community kyverno argo external-secrets >/dev/null
 
 say "Installing Traefik (ingress)"
 helm upgrade --install traefik traefik/traefik --version "$TRAEFIK_CHART" \
@@ -80,6 +82,10 @@ if [[ $GITOPS == 1 ]]; then
     exit 1
   fi
 
+  say "Installing the External Secrets Operator (it generates the Redis password, so the chart ships none)"
+  helm upgrade --install external-secrets external-secrets/external-secrets --version "$ESO_CHART" \
+    -n external-secrets --create-namespace -f platform/external-secrets-values.yaml --wait --timeout 6m
+  kubectl wait --for=condition=Established crd/externalsecrets.external-secrets.io crd/passwords.generators.external-secrets.io --timeout=120s
   say "Installing Argo CD"
   helm upgrade --install argocd argo/argo-cd --version "$ARGOCD_CHART" \
     -n argocd --create-namespace -f platform/argocd-values.yaml --wait --timeout 8m

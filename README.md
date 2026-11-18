@@ -58,7 +58,7 @@ make down
 | **High availability** | Topology spread over nodes, a PodDisruptionBudget, and a node drain that keeps serving. |
 | **Network security** | Default-deny ingress and egress, then explicit allows: ingress controller to API, API to Redis, DNS. Enforced by Calico. |
 | **Pod hardening** | Non-root, read-only root filesystem, all capabilities dropped, seccomp `RuntimeDefault`, no service-account token mounted. |
-| **Secrets** | Redis password generated once by Helm (`lookup` keeps it across upgrades; under Argo CD the field is ignored, see GitOps) and injected from a Secret, never written in a manifest. |
+| **Secrets** | Under Argo CD the [External Secrets Operator](https://external-secrets.io) generates the Redis password once (an `ExternalSecret` with a `Password` generator, `refreshPolicy: CreatedOnce`) and owns the Secret, so the chart ships no password in any form (`redisPassword.source: externalSecrets`). A plain `helm install` still generates it with `lookup` (`source: helm`, the default). Either way it is injected from a Secret and never written in a manifest. |
 | **Stateful workload** | Redis as a StatefulSet with a PersistentVolumeClaim and append-only persistence. |
 | **Observability** | kube-prometheus-stack (pinned chart). The chart ships a `ServiceMonitor`, a `PrometheusRule` and a Grafana dashboard as code ([`dashboard.json`](charts/shop/files/dashboard.json), picked up by the Grafana sidecar). The default-deny policy has one explicit allow so only the `monitoring` namespace can scrape `/metrics`. |
 | **SLOs and alerting** | Two SLOs on the user-facing routes: 99% of requests are not 5xx, 95% finish within 500 ms. Alerts use multiwindow burn rates (page at 14.4x, ticket at 6x), written in [`slo-rules.yaml`](charts/shop/files/slo-rules.yaml) and unit-tested with `promtool` ([`tests`](tests/slo-rules.test.yaml), run in CI with no cluster). |
@@ -190,9 +190,10 @@ dump, real data sizes, or anything other than Redis.
   with a real LoadBalancer would not need it.
 - **Helm's `lookup` does not exist under Argo CD.** The chart keeps the Redis password across upgrades with
   `lookup`, but Argo renders with `helm template`, which cannot read the cluster, so every render invented a
-  new password and the Secret would be rewritten on every sync. The Application ignores that one field
-  (`ignoreDifferences` plus `RespectIgnoreDifferences`). Checked by hashing the password before and after two
-  real Git-driven syncs: identical.
+  new password and the Secret would be rewritten on every sync. First fix: the Application ignored that one field
+  (`ignoreDifferences` plus `RespectIgnoreDifferences`), checked by hashing the password before and after two
+  real Git-driven syncs. That was a workaround for a design problem, so the GitOps install now uses the External Secrets
+  Operator instead (the Secret is not in the chart, so there is nothing for Argo to ignore); the same hashing check still passes.
 - **My first two GitOps tests were wrong.** I forced a sync with a patch that replaced the Application's sync
   options, so it silently dropped the setting I was testing, and the password changed. I also deleted a
   PodDisruptionBudget and a NetworkPolicy with one command that treated both names as PDBs, so "restored in
