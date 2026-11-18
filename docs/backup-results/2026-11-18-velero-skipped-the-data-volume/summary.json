@@ -1,0 +1,7 @@
+{
+  "backup_phase": "Completed",
+  "backup_seconds": 12,
+  "restore_phase": "Completed",
+  "restore_seconds": 18,
+  "restored_data": "DIFFERENT"
+}

@@ -1,4 +1,4 @@
-.PHONY: loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: backup-drill loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -65,3 +65,6 @@ chaos-netpol:
 
 loadtest:          ## measure the autoscaling: predictions in docs/loadtest.md, needs a running cluster
 	scripts/loadtest.sh
+
+backup-drill:      ## back up Redis's volume with Velero and restore it into a second namespace (docs/backup-restore.md)
+	scripts/backup-drill.sh

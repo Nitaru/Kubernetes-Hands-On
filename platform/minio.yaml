@@ -1,0 +1,62 @@
+# A single MinIO pod as the S3 target for the backup drill (docs/backup-restore.md). Lab setup only:
+# emptyDir storage (gone when the pod is), throwaway credentials, no TLS. A real backup target is off the cluster.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: velero
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: minio-lab
+  namespace: velero
+type: Opaque
+stringData:
+  MINIO_ROOT_USER: minio-lab
+  MINIO_ROOT_PASSWORD: minio-lab-secret   # throwaway lab credential for a bucket that lives in this cluster only
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: minio
+  namespace: velero
+spec:
+  replicas: 1
+  selector:
+    matchLabels: { app: minio }
+  template:
+    metadata:
+      labels: { app: minio }
+    spec:
+      containers:
+        - name: minio
+          # MinIO stopped publishing community images to Docker Hub, so this is Bitnami's frozen mirror of a 2025-07 release.
+          # Unmaintained, which is acceptable for a throwaway target inside a lab cluster, and not for anything else.
+          image: bitnamilegacy/minio:2025.7.23-debian-12-r5
+          env:
+            - { name: MINIO_DEFAULT_BUCKETS, value: velero }   # creates the bucket Velero will use
+          envFrom:
+            - secretRef: { name: minio-lab }
+          ports:
+            - { name: s3, containerPort: 9000 }
+          readinessProbe:
+            httpGet: { path: /minio/health/ready, port: s3 }
+            periodSeconds: 5
+          resources:
+            requests: { cpu: 50m, memory: 128Mi }
+            limits: { memory: 512Mi }
+          volumeMounts:
+            - { name: data, mountPath: /bitnami/minio/data }
+      volumes:
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: minio
+  namespace: velero
+spec:
+  selector: { app: minio }
+  ports:
+    - { name: s3, port: 9000, targetPort: s3 }

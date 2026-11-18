@@ -1,0 +1,35 @@
+# Velero for the backup drill (docs/backup-restore.md): MinIO in the cluster as the S3 target, the node agent for
+# file-level volume backup (kind has no snapshot support, so there are no volume snapshots).
+initContainers:
+  - name: velero-plugin-for-aws
+    image: velero/velero-plugin-for-aws:v1.13.1
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+      - mountPath: /target
+        name: plugins
+configuration:
+  backupStorageLocation:
+    - name: default
+      provider: aws
+      bucket: velero
+      default: true
+      config:
+        region: minio
+        s3ForcePathStyle: "true"
+        s3Url: http://minio.velero.svc:9000
+credentials:
+  useSecret: true
+  secretContents:
+    cloud: |
+      [default]
+      aws_access_key_id = minio-lab
+      aws_secret_access_key = minio-lab-secret
+snapshotsEnabled: false
+deployNodeAgent: true
+resources:
+  requests: { cpu: 50m, memory: 128Mi }
+  limits: { memory: 512Mi }
+nodeAgent:
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { memory: 512Mi }
