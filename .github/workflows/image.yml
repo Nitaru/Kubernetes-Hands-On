@@ -3,11 +3,13 @@ name: image
 
 # Builds the app image, pushes it to GHCR, signs it with cosign (keyless: GitHub's OIDC token vouches for this workflow),
 # checks the signature, and records the tag in charts/shop/values-ghcr.yaml so a deployment can follow it.
-# Runs only when the app or this workflow changes.
+#
+# STATUS: NOT WORKING YET, so it only runs when started by hand. Two runs on 2026-11-18 (a nested image name, then a flat one) built the
+# image and were then refused by GHCR with "error from registry: denied" at the push, so the signing, the verification (including its
+# negative check) and the tag commit below have never run. Likely needs a one-time GitHub setting (repository Settings > Actions > General >
+# Workflow permissions, and the package's "Manage Actions access"), or a token with write:packages stored as a secret.
+# Once a manual run succeeds, put the push trigger back: `push: { branches: [main], paths: ["app/**", ".github/workflows/image.yml"] }`.
 on:
-  push:
-    branches: [main]
-    paths: ["app/**", ".github/workflows/image.yml"]
   workflow_dispatch:
 
 permissions:
