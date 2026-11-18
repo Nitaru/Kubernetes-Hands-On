@@ -55,6 +55,23 @@ with a near-100% error ratio inside that window. The 5-minute error ratio spikes
 **does not page** (its 1 h window stays below 14.4%). If this is right, it is a design flaw: a read-only endpoint is
 taken down by a dependency it does not use.
 
+### 3b. `redisdown`: Redis is down for 45 seconds
+
+**Why this exists.** Added after the first run of experiment 3, while it was still running: the Redis pod came back in
+about 3 seconds, which is shorter than the two failed readiness probes the API needs to leave the Service (up to 10 s).
+So experiment 3 could not test the design question at all. This one can. The hypothesis below was written after I saw
+experiment 3's timeline, but before I ran 3b.
+
+`kubectl scale statefulset shop-redis --replicas=0`, wait 45 s under load, then scale back to 1. A real Redis incident
+(a node loss, a volume that takes a minute to re-attach) lasts far longer than 3 seconds.
+
+**Hypothesis.** After at most two failed readiness probes (about 10 s) every API pod leaves the Service, so **product
+requests fail too, not only orders**: a near-100% error ratio from roughly 10 s after the fault until Redis is back and
+the API pods pass readiness again, about **35 to 60 s of total outage** for a 45 s Redis outage, then recovery within
+about 15 s of Redis returning (probe period 5 s plus the client reconnecting). The fast-burn alert does **not page**:
+45 s of failures is about 1.25% of a 1-hour window against a 14.4% threshold. If this is right, readiness couples a
+read-only endpoint to a dependency it does not use.
+
 ### 4. `baddeploy`: ship a broken release through Git and roll it back through Git
 
 Commit a change pointing the image at a tag that does not exist to the in-cluster Git server, let Argo CD sync it, then
