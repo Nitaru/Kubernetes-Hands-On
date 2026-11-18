@@ -1,0 +1,30 @@
+{{- if .Values.rollout.enabled }}
+# Asks Prometheus for the 5xx ratio of the canary pods only (their names carry the ReplicaSet's pod-template hash) and fails the
+# rollout above 10%. The 3% simulated payment failures are about 0.6% of all requests, far below that. If the canary serves no
+# requests at all the query falls back to 0, which passes: this check needs traffic to mean anything.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: shop-canary-health
+  labels: {{- include "shop.labels" . | nindent 4 }}
+spec:
+  args:
+    - name: canary-hash
+  metrics:
+    - name: canary-error-ratio
+      initialDelay: 20s
+      interval: 15s
+      count: 3
+      failureLimit: 0
+      successCondition: result[0] <= 0.10
+      failureCondition: result[0] > 0.10
+      provider:
+        prometheus:
+          address: http://kps-prometheus.monitoring.svc.cluster.local:9090
+          query: |
+            (
+              sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)", status=~"5..", pod=~"shop-api-{{`{{args.canary-hash}}`}}-.*"}[1m]))
+              /
+              sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)", pod=~"shop-api-{{`{{args.canary-hash}}`}}-.*"}[1m]))
+            ) or vector(0)
+{{- end }}

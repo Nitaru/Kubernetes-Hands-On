@@ -1,0 +1,17 @@
+1794971643.899 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794971649.156 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794971654.394 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794971659.657 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794971664.950 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794971670.199 phase=Paused abort= step=1 canary_hash=9f74687b6 stable=755b8c6957 msg=CanaryPauseStep
+1794971675.454 phase=Progressing abort= step=0 canary_hash=78fdc74ccc stable=755b8c6957 msg=more replicas need to be updated
+1794971680.713 phase=Paused abort= step=1 canary_hash=78fdc74ccc stable=755b8c6957 msg=CanaryPauseStep
+1794971685.985 phase=Paused abort= step=1 canary_hash=78fdc74ccc stable=755b8c6957 msg=CanaryPauseStep
+1794971691.235 phase=Paused abort= step=1 canary_hash=78fdc74ccc stable=755b8c6957 msg=CanaryPauseStep
+1794971696.515 phase=Paused abort= step=1 canary_hash=78fdc74ccc stable=755b8c6957 msg=CanaryPauseStep
+1794971701.797 phase=Paused abort= step=1 canary_hash=78fdc74ccc stable=755b8c6957 msg=CanaryPauseStep
+1794971707.039 phase=Progressing abort= step=2 canary_hash=78fdc74ccc stable=755b8c6957 msg=more replicas need to be updated
+1794971712.293 phase=Progressing abort= step=2 canary_hash=78fdc74ccc stable=755b8c6957 msg=more replicas need to be updated
+1794971717.581 phase=Progressing abort= step=2 canary_hash=78fdc74ccc stable=755b8c6957 msg=more replicas need to be updated
+1794971722.868 phase=Progressing abort= step=2 canary_hash=78fdc74ccc stable=755b8c6957 msg=more replicas need to be updated
+1794971728.151 phase=Degraded abort=true step=0 canary_hash=78fdc74ccc stable=755b8c6957 msg=RolloutAborted: Rollout aborted update to revision 3: Step-based analy

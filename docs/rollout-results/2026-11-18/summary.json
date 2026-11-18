@@ -1,0 +1,20 @@
+{
+  "release_A_good": {
+    "seconds": 175.2,
+    "requests": 3504,
+    "orders": 730,
+    "orders_payment_502": 20,
+    "orders_fault": 0,
+    "products_fault": 0,
+    "order_failure_share_pct": 2.7
+  },
+  "release_B_bad": {
+    "seconds": 92.0,
+    "requests": 1839,
+    "orders": 381,
+    "orders_payment_502": 79,
+    "orders_fault": 0,
+    "products_fault": 0,
+    "order_failure_share_pct": 20.7
+  }
+}

@@ -45,3 +45,9 @@ redisPassword:
   # externalSecrets: the External Secrets Operator generates it once and owns the Secret. Needs the operator and its CRDs installed first
   #       (scripts/up.sh does that for the GitOps install). The chart then ships no password at all, in any form.
   source: helm
+
+rollout:
+  # false: a plain Deployment with rolling updates. true: an Argo Rollouts canary with an automatic analysis (needs Argo Rollouts installed,
+  # see docs/progressive-delivery.md). The HPA, the PDB and the Service work with either.
+  enabled: false
+  pauseSeconds: 30
