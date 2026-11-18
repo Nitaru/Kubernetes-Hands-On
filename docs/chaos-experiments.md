@@ -102,6 +102,19 @@ So I expect: the other-namespace probe stays **blocked throughout**, the Redis p
 **opens** while the policy is missing and closes again after, and Argo CD's self-heal restores the policy in
 **under 60 s** (30 s polling plus a sync). The exposure window is the number to report.
 
+## Re-measurement after the fix (written before the fix is deployed)
+
+Experiment 3b showed the design flaw: with Redis down for 45 s, 602 product requests failed because readiness required
+Redis. The fix (in `app/src/server.js`) takes Redis out of the readiness check, adds a `shop_redis_up` metric, and leaves
+`/api/orders` to answer 503 on its own when Redis is down. Same experiment, same load, results in
+`docs/chaos-results/2026-11-18-after-fix/`.
+
+**Hypothesis.** No pod leaves the Service, so **product requests do not fail at all** (0 fault errors on products).
+Orders still fail with 503 for as long as Redis is down, so the overall error ratio inside the 45 s window is close to
+the share of orders in the load, **about 20%**, instead of 75%. Orders recover within about 5 s of Redis returning
+(the client reconnecting). The fast-burn alert still does not page for a 45 s outage. Note the trade: the fix does not
+make orders survive a Redis outage, it stops the outage from also taking down browsing.
+
 ## What counts as done
 
 Each experiment: the hypothesis above, the measured result next to it, and whether I was right. At least one action
