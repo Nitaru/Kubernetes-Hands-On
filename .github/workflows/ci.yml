@@ -21,6 +21,12 @@ jobs:
           helm template shop charts/shop -n shop | kubeconform -strict -summary \
             -schema-location default \
             -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
+      - name: Validate the External Secrets rendering (the generator CRD may have no published schema)
+        run: |
+          helm template shop charts/shop -n shop --set redisPassword.source=externalSecrets | kubeconform -strict -summary \
+            -ignore-missing-schemas \
+            -schema-location default \
+            -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json'
       - name: Unit-test the SLO alert rules
         run: scripts/test-rules.sh
       - name: Lint the Dockerfile

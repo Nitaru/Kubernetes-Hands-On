@@ -74,6 +74,9 @@ if kubectl -n argocd get application shop >/dev/null 2>&1; then
   check "shop is Healthy"                       retry_long bash -c '[[ $(kubectl -n argocd get application shop -o jsonpath={.status.health.status}) == Healthy ]]'
   check "automated sync with prune and self-heal is on" bash -c '[[ $(kubectl -n argocd get application shop -o jsonpath="{.spec.syncPolicy.automated.prune}{.spec.syncPolicy.automated.selfHeal}") == truetrue ]]'
   check "a PodDisruptionBudget deleted by hand is restored by Argo" restored
+  check "the External Secrets Operator is Ready"  kubectl -n external-secrets wait --for=condition=Ready pod -l app.kubernetes.io/name=external-secrets --timeout=120s
+  check "the Redis Secret is owned by an ExternalSecret, not by the chart" bash -c '[[ $(kubectl -n shop get secret shop-redis -o jsonpath="{.metadata.ownerReferences[0].kind}") == ExternalSecret ]]'
+  check "the Redis password is not stored in Git or in any chart output" bash -c '! helm template shop charts/shop -n shop --set redisPassword.source=externalSecrets | grep -q -E "^kind: Secret$"'
   check "Argo CD UI answers through the ingress" http 200 "http://argocd.localtest.me:8080/"
 else
   echo "gitops (Argo CD): skipped, the app was installed directly with Helm (make up-gitops to use Argo CD)"
