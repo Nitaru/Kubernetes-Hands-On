@@ -1,0 +1,77 @@
+---
+name: image
+
+# Builds the app image, pushes it to GHCR, signs it with cosign (keyless: GitHub's OIDC token vouches for this workflow),
+# checks the signature, and records the tag in charts/shop/values-ghcr.yaml so a deployment can follow it.
+# Runs only when the app or this workflow changes.
+on:
+  push:
+    branches: [main]
+    paths: ["app/**", ".github/workflows/image.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: image
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # commits the new tag below
+      packages: write   # pushes to GHCR
+      id-token: write   # keyless signing
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: sigstore/cosign-installer@398d4b0eeef1380460a10c8013a76f728fb906ac # v3
+
+      - name: Build and push
+        id: image
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}/shop-api"
+          docker build --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" -t "$image:$GITHUB_SHA" app
+          docker push "$image:$GITHUB_SHA"
+          echo "repository=$image" >> "$GITHUB_OUTPUT"
+          echo "ref=$(docker inspect --format '{{index .RepoDigests 0}}' "$image:$GITHUB_SHA")" >> "$GITHUB_OUTPUT"
+
+      - name: Sign the image
+        run: cosign sign --yes "${{ steps.image.outputs.ref }}"
+
+      - name: Verify the signature, and check that verification can fail
+        run: |
+          ref="${{ steps.image.outputs.ref }}"
+          issuer=https://token.actions.githubusercontent.com
+          identity="https://github.com/${GITHUB_REPOSITORY}/.github/workflows/image.yml@${GITHUB_REF}"
+          cosign verify "$ref" --certificate-identity "$identity" --certificate-oidc-issuer "$issuer" > /dev/null
+          echo "signature verified for $identity"
+          # A check that cannot fail proves nothing: a signer that is not this workflow must be rejected.
+          if cosign verify "$ref" --certificate-identity "https://github.com/someone-else/repo/.github/workflows/image.yml@refs/heads/main" \
+               --certificate-oidc-issuer "$issuer" > /dev/null 2>&1; then
+            echo "verification accepted a signer that is not this workflow" >&2
+            exit 1
+          fi
+          echo "a different signer was rejected, as it should be"
+
+      - name: Record the tag in git
+        run: |
+          cat > charts/shop/values-ghcr.yaml <<YAML
+          # Written by .github/workflows/image.yml. Deploys the image CI built and signed instead of the local one:
+          #   helm upgrade --install shop charts/shop -f charts/shop/values-ghcr.yaml
+          image:
+            repository: ${{ steps.image.outputs.repository }}
+            tag: "${GITHUB_SHA}"
+            pullPolicy: IfNotPresent
+          YAML
+          sed -i 's/^          //' charts/shop/values-ghcr.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add charts/shop/values-ghcr.yaml
+          git diff --cached --quiet || { git commit -m "Deploy shop-api ${GITHUB_SHA::7}, published and signed by CI [skip ci]"; git pull --rebase origin main; git push origin HEAD:main; }
