@@ -23,7 +23,7 @@ ingress:
   host: shop.localtest.me    # resolves to 127.0.0.1, so no /etc/hosts edit is needed
 
 redis:
-  image: redis:7.4-alpine
+  image: redis:8.0-alpine
   storage: 1Gi
   resources:
     requests: { cpu: 50m, memory: 64Mi }
