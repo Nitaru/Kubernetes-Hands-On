@@ -150,3 +150,37 @@ tests:
       - eval_time: 3m
         alertname: ShopRedisDown
         exp_alerts: []
+
+  - name: Traefik answers 503 with no pod behind it; only the ingress SLI sees it
+    interval: 1m
+    input_series:
+      # the app's own series stop: no pod exists to count anything
+      - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/products", status="200"}'
+        values: '0+100x10 _x60'
+      - series: 'traefik_router_requests_total{router="shop-shop-shop-localtest-me@kubernetes", code="200"}'
+        values: '0+100x10 1000x60'
+      - series: 'traefik_router_requests_total{router="shop-shop-shop-localtest-me@kubernetes", code="503"}'
+        values: '0x10 0+100x60'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: ShopIngressAvailabilityFastBurn
+        exp_alerts:
+          - exp_labels: { severity: critical, slo: availability }
+            exp_annotations:
+              summary: Users of the shop are getting errors from the ingress, 14.4x the error budget
+              description: "74.36% of requests through Traefik failed over the last hour (SLO allows 1%)."   # 10 good minutes are still in the 1 h window
+      - eval_time: 40m
+        alertname: ShopAvailabilityFastBurn
+        exp_alerts: []
+
+  - name: other hosts behind the same Traefik do not count against the shop
+    interval: 1m
+    input_series:
+      - series: 'traefik_router_requests_total{router="shop-shop-shop-localtest-me@kubernetes", code="200"}'
+        values: '0+100x120'
+      - series: 'traefik_router_requests_total{router="monitoring-kps-grafana-grafana-localtest-me@kubernetes", code="503"}'
+        values: '0+100x120'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: ShopIngressAvailabilityFastBurn
+        exp_alerts: []

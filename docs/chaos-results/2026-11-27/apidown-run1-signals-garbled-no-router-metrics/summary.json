@@ -1,0 +1,47 @@
+{
+  "before": {
+    "requests": 501,
+    "fault_errors": 0,
+    "fault_error_pct": 0.0,
+    "payment_502": 5,
+    "fault_errors_products": 0,
+    "fault_errors_orders": 0,
+    "p50_ms": 29.6,
+    "p95_ms": 58.7,
+    "p99_ms": 411.2,
+    "max_ms": 938.3
+  },
+  "during": {
+    "requests": 3674,
+    "fault_errors": 3654,
+    "fault_error_pct": 99.46,
+    "payment_502": 0,
+    "fault_errors_products": 2927,
+    "fault_errors_orders": 727,
+    "p50_ms": 22.3,
+    "p95_ms": 50.3,
+    "p99_ms": 82.1,
+    "max_ms": 82.1
+  },
+  "after": {
+    "requests": 601,
+    "fault_errors": 0,
+    "fault_error_pct": 0.0,
+    "payment_502": 1,
+    "fault_errors_products": 0,
+    "fault_errors_orders": 0,
+    "p50_ms": 31.1,
+    "p95_ms": 64.1,
+    "p99_ms": 412.0,
+    "max_ms": 909.8
+  },
+  "fault_window_s": 183.7,
+  "first_fault_error_after_s": 0.2,
+  "last_fault_error_after_s": 182.9,
+  "outage_span_s": 182.7,
+  "longest_gap_without_a_successful_products_response_s": 182.7,
+  "burn_rate_during_fault_window": 99.5,
+  "fault_status_codes": {
+    "503": 3654
+  }
+}

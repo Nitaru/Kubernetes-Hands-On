@@ -58,6 +58,7 @@ helm upgrade --install metrics-server metrics-server/metrics-server --version "$
 say "Installing kube-prometheus-stack (Prometheus, Alertmanager, Grafana; must come before the app, which ships a ServiceMonitor)"
 helm upgrade --install kps prometheus-community/kube-prometheus-stack --version "$PROM_CHART" \
   -n monitoring --create-namespace -f platform/kube-prometheus-stack-values.yaml --wait --timeout 8m
+kubectl apply -f platform/traefik-servicemonitor.yaml   # needs the CRD from kube-prometheus-stack, so not with Traefik
 
 say "Installing Kyverno and the shop admission policies (before the app, so the chart itself is validated)"
 helm upgrade --install kyverno kyverno/kyverno --version "$KYVERNO_CHART" \

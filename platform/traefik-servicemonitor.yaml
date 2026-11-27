@@ -1,0 +1,17 @@
+# Scrape Traefik's own metrics, so availability can also be measured at the ingress (postmortem 2026-11-18, item 3).
+# The app's metrics only count requests that reach a pod; a 503 that Traefik generates itself (no endpoints) never does.
+# Applied by scripts/up.sh after kube-prometheus-stack, which provides the ServiceMonitor CRD; Traefik is installed earlier.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: traefik
+      app.kubernetes.io/component: metrics
+  endpoints:
+    - port: metrics
+      path: /metrics
+      interval: 15s

@@ -19,6 +19,10 @@ metrics:
   prometheus:
     service:
       enabled: true
+    # Per-router request counts, so the ingress SLI can be limited to the shop's Ingress. The per-service counts are not
+    # enough: with no endpoints left, Traefik's 503s were not counted against the shop's service at all (measured, see
+    # docs/alerting-followups.md), only against the entrypoint, which mixes every host.
+    addRoutersLabels: true
 # kind on Docker Desktop: a NodePort request that has to hop to a pod on another node hangs when it
 # enters through the published host port (in-cluster and node-to-node traffic is fine). Running the
 # ingress controller on the control-plane node, where the port is published, avoids that hop.

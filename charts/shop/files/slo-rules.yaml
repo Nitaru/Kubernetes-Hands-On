@@ -72,6 +72,22 @@ groups:
             /
             sum(rate(http_request_duration_seconds_count{app="shop-api", route=~"/api/(products|orders)"}[6h]))
           )
+  # Postmortem 2026-11-18, action item 3: the same availability SLI measured at the ingress. The app's metrics only see
+  # requests that reach a pod; with every pod gone, 99% of requests failed and the app's SLI had no data at all
+  # (docs/alerting-followups.md). Traefik's per-router counts (addRoutersLabels in platform/traefik-values.yaml) see them.
+  # Covers every path on shop.localtest.me, not only the two user-facing routes: Traefik has no path label.
+  - name: shop-ingress-slo-recordings
+    rules:
+      - record: shop:ingress_errors:ratio_rate5m
+        expr: |
+          (sum(rate(traefik_router_requests_total{router=~"shop-shop-.*@kubernetes", code=~"5.."}[5m])) or vector(0))
+          /
+          sum(rate(traefik_router_requests_total{router=~"shop-shop-.*@kubernetes"}[5m]))
+      - record: shop:ingress_errors:ratio_rate1h
+        expr: |
+          (sum(rate(traefik_router_requests_total{router=~"shop-shop-.*@kubernetes", code=~"5.."}[1h])) or vector(0))
+          /
+          sum(rate(traefik_router_requests_total{router=~"shop-shop-.*@kubernetes"}[1h]))
   - name: shop-slo-alerts
     rules:
       - alert: ShopAvailabilityFastBurn
@@ -102,6 +118,15 @@ groups:
         annotations:
           summary: Shop API is burning its latency error budget 6x too fast
           description: "{{ $value | humanizePercentage }} of requests took longer than 500 ms over the last 6 hours (SLO allows 5%)."
+      # Same thresholds as ShopAvailabilityFastBurn, measured at the ingress. Both fire for an outage inside the app; only
+      # this one fires when the failures happen in front of the pods.
+      - alert: ShopIngressAvailabilityFastBurn
+        expr: shop:ingress_errors:ratio_rate1h > (14.4 * 0.01) and shop:ingress_errors:ratio_rate5m > (14.4 * 0.01)
+        for: 2m
+        labels: { severity: critical, slo: availability }
+        annotations:
+          summary: Users of the shop are getting errors from the ingress, 14.4x the error budget
+          description: "{{ $value | humanizePercentage }} of requests through Traefik failed over the last hour (SLO allows 1%)."
       - alert: ShopApiDown
         expr: sum(up{namespace="shop", service="shop-api"}) == 0 or absent(up{namespace="shop", service="shop-api"})
         for: 5m

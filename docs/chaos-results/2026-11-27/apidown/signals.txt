@@ -1,0 +1,41 @@
+1795739903.867 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.004056898949407166 router_err1m=0 entrypoint_err1m=0 redis_up_min=1
+1795739909.151 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.004056898949407166 router_err1m=0.0024044496594593464 entrypoint_err1m=0.0024063867828782812 redis_up_min=1
+1795739914.520 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.004462791042461982 router_err1m=0.0026332743500857556 entrypoint_err1m=0.002634446794705507 redis_up_min=1
+1795739919.747 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.0036711843805355905 router_err1m=0.0028387749506140207 entrypoint_err1m=0.0028402065479766403 redis_up_min=1
+1795739924.963 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.005041147872301035 router_err1m=0.38839887838897574 entrypoint_err1m=0.38858750784046664 redis_up_min=1
+1795739930.168 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.005771497094609735 router_err1m=0.4236137251232253 entrypoint_err1m=0.42380660793598574 redis_up_min=1
+1795739935.365 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0.005849271656258248 router_err1m=0.5501326720581103 entrypoint_err1m=0.550361433509498 redis_up_min=no data
+1795739940.579 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 router_err1m=0.6870212098393818 entrypoint_err1m=0.6871792971578125 redis_up_min=no data
+1795739945.802 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 router_err1m=0.7148590160823434 entrypoint_err1m=0.7149999532199248 redis_up_min=no data
+1795739951.011 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=no data router_err1m=0.8598298279662351 entrypoint_err1m=0.8599065012010995 redis_up_min=no data
+1795739956.222 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739961.425 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739966.622 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739971.838 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739977.039 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739982.259 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739987.461 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739992.672 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795739997.873 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740003.099 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740008.317 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740013.521 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740018.737 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740023.952 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740029.168 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740034.365 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740039.588 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740044.789 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740049.987 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740055.203 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740060.424 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740065.653 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740070.868 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740076.078 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740081.291 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740086.499 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=1 entrypoint_err1m=1 redis_up_min=no data
+1795740091.765 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=0.9844791146572004 entrypoint_err1m=0.9844791146572004 redis_up_min=1
+1795740096.965 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=0.9844791146572004 entrypoint_err1m=0.9844791146572004 redis_up_min=1
+1795740102.172 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data router_err1m=0.8298785936582975 entrypoint_err1m=0.8298785936582975 redis_up_min=1
+1795740107.377 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 router_err1m=0.6644669371205283 entrypoint_err1m=0.6644669371205284 redis_up_min=1
+1795740112.577 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 router_err1m=0.6644669371205283 entrypoint_err1m=0.6644669371205284 redis_up_min=1

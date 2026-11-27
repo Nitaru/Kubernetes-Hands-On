@@ -1,0 +1,82 @@
+1795739499.674 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=no data
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739505.054 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=0.05816
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739510.408 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=0.06985777777777778
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739515.657 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=0.08151555555555556
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739520.907 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=7.000247450090444
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739526.146 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=8.704155023579084
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739531.382 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=10.416721476364655
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739536.627 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=12.315982222222223
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739541.857 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=14.041222222222222
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739547.091 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=15.737396666666667
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739552.341 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=17.457062592592592
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739557.574 ShopRedisDown=inactive ShopApiDown=inactive app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.184942592592595
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739562.807 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.4891140790783
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739568.052 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.111336301300522
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739573.295 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.111336301300522
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739578.531 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.044444444444444
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739583.768 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.955775313525486
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739589.013 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.955775313525486
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739594.246 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.244894330985133
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739599.475 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.022452350792978
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739604.714 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.02245235079298
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739609.941 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.000444454321208
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739615.179 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.000444454321208
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739620.421 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.000444454321208
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739625.643 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.93355309130326
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739630.872 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.93355309130326
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739636.106 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.93355309130326
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739641.359 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.888880503648828
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739646.615 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.888880503648828
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739651.858 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.022439017163343
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739657.109 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.955555555555556
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739662.341 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.955555555555552
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739667.576 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.311347165739484
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739672.814 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.022667170381563
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739678.059 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=20.022667170381563
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739683.296 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.489321984933
+no data ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739688.534 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.644668646957587
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739693.785 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=19.644668646957584
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739699.044 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=16.466666666666665
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739704.282 ShopRedisDown=inactive ShopApiDown=pending app_err1m=no data ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=13.044444444444443
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=
+1795739709.521 ShopRedisDown=inactive ShopApiDown=pending app_err1m=0 ingress_service_err1m=no data ingress_entrypoint_5xx1m=no data redis_up_min=13.044444444444443
+1 ShopRedisDown= ShopApiDown= app_err1m= ingress_service_err1m= ingress_entrypoint_5xx1m= redis_up_min=

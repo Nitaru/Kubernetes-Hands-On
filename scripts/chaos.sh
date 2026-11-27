@@ -3,6 +3,7 @@
 # The hypotheses are in docs/chaos-experiments.md, written before the first run.
 #
 #   scripts/chaos.sh podkill|drain|redis|redisdown|baddeploy|netpol|all
+#   scripts/chaos.sh redisalert|apidown                 # postmortem follow-ups; REDIS_DOWN_S=45 for the short outage
 #   CHAOS_DATE=2026-11-18 scripts/chaos.sh redis      # where the raw results go (default: today)
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 1
@@ -153,6 +154,63 @@ redisdown() {
   finish redisdown
 }
 
+# ---------- follow-ups to the postmortem (docs/alerting-followups.md) ----------
+alert_state() {   # alert_state <name>: firing, pending or inactive
+  kubectl get --raw "$PROM/query?query=$(jq -rn --arg q "ALERTS{alertname=\"$1\"}" '$q|@uri')" 2>/dev/null \
+    | jq -r '[.data.result[].metric.alertstate] | if index("firing") then "firing" elif index("pending") then "pending" else "inactive" end' 2>/dev/null || echo unknown
+}
+signals() {   # one line every 5 s: alert states, error ratios seen by the app and by Traefik (per router and for the whole entrypoint)
+  local q_app q_router q_entry
+  q_app='(sum(rate(http_request_duration_seconds_count{app="shop-api",route=~"/api/(products|orders)",status=~"5.."}[1m])) or vector(0)) / sum(rate(http_request_duration_seconds_count{app="shop-api",route=~"/api/(products|orders)"}[1m]))'
+  q_router='(sum(rate(traefik_router_requests_total{router=~"shop-shop-.*@kubernetes",code=~"5.."}[1m])) or vector(0)) / sum(rate(traefik_router_requests_total{router=~"shop-shop-.*@kubernetes"}[1m]))'
+  q_entry='(sum(rate(traefik_entrypoint_requests_total{entrypoint="web",code=~"5.."}[1m])) or vector(0)) / sum(rate(traefik_entrypoint_requests_total{entrypoint="web"}[1m]))'
+  while [[ ! -f $DIR/STOP ]]; do
+    printf '%s ShopRedisDown=%s ShopApiDown=%s app_err1m=%s router_err1m=%s entrypoint_err1m=%s redis_up_min=%s\n' "$(now)" \
+      "$(alert_state ShopRedisDown)" "$(alert_state ShopApiDown)" \
+      "$(prom_q "$q_app")" "$(prom_q "$q_router")" "$(prom_q "$q_entry")" "$(prom_q 'min(shop_redis_up)')"
+    sleep 5
+  done
+}
+
+redisalert() {   # Redis gone for REDIS_DOWN_S seconds (default 180), watching ShopRedisDown
+  local down=${REDIS_DOWN_S:-180}
+  begin "redisalert-${down}s" || return 1
+  signals > "$DIR/signals.txt" & local sp=$!
+  trap 'set_selfheal true; kubectl -n $NS scale statefulset shop-redis --replicas=1 >/dev/null' RETURN
+  set_selfheal false
+  say "redisalert: self-heal is off; scale Redis to 0 for ${down} s"
+  event fault
+  kubectl -n $NS scale statefulset shop-redis --replicas=0 2>&1 | tail -1
+  sleep "$down"
+  event redis_restored
+  kubectl -n $NS scale statefulset shop-redis --replicas=1 2>&1 | tail -1
+  set_selfheal true
+  wait_until 240 "system steady again" steady
+  event recovered
+  say "redisalert: keep watching for 90 s so the alert can resolve"
+  sleep 90
+  finish "redisalert-${down}s"
+  wait $sp 2>/dev/null
+}
+
+apidown() {   # every API pod gone for 180 s: does the ingress see what the app cannot?
+  begin apidown || return 1
+  signals > "$DIR/signals.txt" & local sp=$!
+  trap 'set_selfheal true; kubectl -n $NS scale deploy shop-api --replicas=2 >/dev/null' RETURN
+  set_selfheal false
+  say "apidown: self-heal is off; scale the API to 0 for 180 s"
+  event fault
+  kubectl -n $NS scale deploy shop-api --replicas=0 2>&1 | tail -1
+  sleep 180
+  event api_restored
+  set_selfheal true   # Argo puts the replicas and the HPA back
+  kubectl -n $NS scale deploy shop-api --replicas=2 2>&1 | tail -1
+  wait_until 240 "system steady again" steady
+  event recovered
+  finish apidown
+  wait $sp 2>/dev/null
+}
+
 # ---------- 4. baddeploy (through Argo CD and the in-cluster Git server) ----------
 argo() { kubectl -n argocd get application shop -o jsonpath="$1" 2>/dev/null; }
 baddeploy() {
@@ -226,5 +284,6 @@ netpol() {
 case "${1:-}" in
   podkill) podkill ;; drain) drain ;; redis) redis ;; redisdown) redisdown ;; baddeploy) baddeploy ;; netpol) netpol ;;
   all) for e in podkill drain redis redisdown baddeploy netpol; do $e || echo "experiment $e did not complete"; done ;;
-  *) echo "usage: $0 podkill|drain|redis|redisdown|baddeploy|netpol|all" >&2; exit 2 ;;
+  redisalert) redisalert ;; apidown) apidown ;;
+  *) echo "usage: $0 podkill|drain|redis|redisdown|baddeploy|netpol|all|redisalert|apidown" >&2; exit 2 ;;
 esac

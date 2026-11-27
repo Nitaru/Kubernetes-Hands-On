@@ -30,7 +30,12 @@ rollout() {
   touch $codes.stop; wait $loop 2>/dev/null
   say "Status codes seen during the rollout"
   sort "$codes" | uniq -c
+  local total failed
+  total=$(wc -l < "$codes" | tr -d ' ')
+  failed=$(grep -vc '^200$' "$codes" || true)
   rm -f "$codes" "$codes.stop"
+  echo "$((total - failed)) of $total requests returned 200"
+  [[ $failed -eq 0 ]] || { echo "FAIL: $failed requests did not return 200 during the rollout" >&2; return 1; }
 }
 
 autoscale() {
