@@ -5,7 +5,8 @@
 A small production-style platform on a local multi-node Kubernetes cluster: ingress, autoscaling,
 zero-downtime rollouts, default-deny network policies, hardened pods, a stateful backend, and
 observability with SLO-based alerting, security scanning in CI, admission policies and GitOps with Argo CD.
-Everything is built from scratch by one script and verified by tests that run in CI.
+Everything is built from scratch by one script; the smoke tests run against it in CI in both install modes. The experiments further down
+(chaos, load test, canary releases, restore drill) are one-off runs on a laptop, with their raw data committed in `docs/`.
 
 ```
  browser / curl
@@ -39,7 +40,7 @@ Needs Docker, [kind](https://kind.sigs.k8s.io), `kubectl` and `helm`.
 ```sh
 make up        # cluster + Calico + Traefik + metrics-server + Prometheus/Grafana + app (about 9 minutes)
 make test      # 29 assertions against the live cluster
-make up-gitops # same platform, but Argo CD deploys the app from Git (see GitOps below); `make test` then runs 35
+make up-gitops # same platform, but Argo CD deploys the app from Git (see GitOps below); `make test` then runs 38
 make scan      # Trivy: image CVEs, Dockerfile and chart misconfigurations, secrets
 make grafana-password   # login for http://grafana.localtest.me:8080 (user: admin)
 make argocd-password    # login for http://argocd.localtest.me:8080 (GitOps mode only)
@@ -124,9 +125,9 @@ components. I also checked that the scanners can fail: a Dockerfile without `USE
 
 ## Chaos experiments
 
-Five failures against the running platform, each with a hypothesis committed before the run: [docs/chaos-experiments.md](docs/chaos-experiments.md)
+Six failures against the running platform, each with a hypothesis committed before the run: [docs/chaos-experiments.md](docs/chaos-experiments.md)
 (`make chaos`, needs `make up-gitops`). Killing a pod, draining a node and shipping a broken release through Git cost zero failed requests;
-deleting the default-deny policy was undone by Argo CD in about 2 s. One prediction was refuted and one found a real flaw: with Redis down for
+deleting the default-deny policy was undone by Argo CD in about 1 s. One prediction was refuted and one found a real flaw: with Redis down for
 45 s, readiness took the whole API out of the Service and product browsing returned 503 although it never touches Redis.
 Postmortem, fix and re-measurement: [docs/postmortems](docs/postmortems/2026-11-18-redis-outage-takes-down-browsing.md).
 Not covered: a multi-machine cluster, realistic network latency, load above about 20 requests a second, and most runs are a single run.
@@ -222,7 +223,8 @@ charts/shop/      the Helm chart (files/: SLO rules and Grafana dashboard)
 tests/            promtool unit tests for the SLO rules, manifests the admission policies must accept or reject
 kind/cluster.yaml 3-node cluster, default CNI disabled
 platform/         values for Traefik, metrics-server, kube-prometheus-stack, Kyverno and Argo CD; policies/; gitops/ (Application, in-cluster Git server); the load generator
-scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh, scan.sh
+scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh, scan.sh; the experiments: chaos.sh (+ chaos-load.py,
+                  chaos-chart.py), loadtest.sh, rollout-demo.sh, backup-drill.sh, redis-restore-drill.sh
 .github/          CI: helm lint, kubeconform (incl. CRD schemas), promtool, hadolint, Trivy scans and SBOM, then an end-to-end run on kind in both install modes (Helm and Argo CD)
 ```
 

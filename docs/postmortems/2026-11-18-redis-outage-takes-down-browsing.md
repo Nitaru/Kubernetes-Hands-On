@@ -77,7 +77,7 @@ in `docs/chaos-results/2026-11-18/redisdown-run1-selfheal-reverted-it/`. The val
   in the 15 minutes around it, and that figure also includes the simulated payment failures and the earlier order failures. The SLO
   is measured at the wrong place for this failure: it cannot see errors generated in front of the pods.
 - **A manual `kubectl scale` is undone within seconds** under Argo CD self-heal (the same for deleting a NetworkPolicy: restored in
-  about 2 s). Good for drift, but anyone handling a real incident has to switch self-heal off first, and that needs to be written down.
+  about 1 s). Good for drift, but anyone handling a real incident has to switch self-heal off first, and that needs to be written down.
 
 ## Action items
 

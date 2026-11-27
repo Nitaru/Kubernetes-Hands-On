@@ -50,7 +50,7 @@ argocd-password:   ## print the Argo CD admin password (user: admin, http://argo
 demo-gitops:
 	scripts/demo.sh gitops
 
-chaos:             ## all five chaos experiments, needs `make up-gitops` (hypotheses: docs/chaos-experiments.md)
+chaos:             ## all six chaos experiments, needs `make up-gitops` (hypotheses: docs/chaos-experiments.md)
 	scripts/chaos.sh all
 chaos-podkill:
 	scripts/chaos.sh podkill
