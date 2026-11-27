@@ -1,7 +1,7 @@
 # Postmortem: a Redis outage took product browsing down too
 
 **Date:** 2026-11-18. **Where:** a local kind cluster (3 nodes, GitOps install), found by a chaos experiment, not in production.
-**Status:** fixed and re-measured. Two follow-ups are still open (see the action items).
+**Status:** fixed and re-measured. Action items 2 and 3 were done on 2026-11-27; item 4 is still open (see the action items).
 **Experiment:** [`chaos-experiments.md`](../chaos-experiments.md), experiment 3b. Raw numbers: `docs/chaos-results/`.
 
 ## Summary
@@ -84,8 +84,8 @@ in `docs/chaos-results/2026-11-18/redisdown-run1-selfheal-reverted-it/`. The val
 | | Item | Status |
 |---|---|---|
 | 1 | Take Redis out of readiness; report it in the `/ready` body and in a new `shop_redis_up` metric | **Done and re-measured** |
-| 2 | Alert on `shop_redis_up == 0` for a minute, so a Redis outage is noticed even when it is short | Open |
-| 3 | Measure the availability SLI at the ingress (Traefik's metrics), so errors generated in front of the pods count | Open |
+| 2 | Alert on `shop_redis_up == 0` for a minute, so a Redis outage is noticed even when it is short | **Done 2026-11-27**: `ShopRedisDown`, fired about 115 s into a 3-minute outage; a 45 s outage does not page ([results](../alerting-followups.md)) |
+| 3 | Measure the availability SLI at the ingress (Traefik's metrics), so errors generated in front of the pods count | **Done 2026-11-27**: with every pod gone, clients saw 99.3% errors and the app's SLI saw none; Traefik's per-router SLI saw 100% ([results](../alerting-followups.md)) |
 | 4 | Redis with a replica and failover, so ordering survives a Redis loss | Open, larger change |
 
 ## What I would say in an interview
