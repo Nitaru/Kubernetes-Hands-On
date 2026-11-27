@@ -71,7 +71,7 @@ make down
 ## Prove it
 
 ```sh
-make demo-rollout    # hammer the site while every pod is replaced: all responses are 200
+make demo-rollout    # hammer the site while every pod is replaced; fails on any non-200 (2026-11-27: 62 of 62 were 200)
 make demo-selfheal   # delete a pod; traffic keeps flowing and a replacement appears
 make demo-autoscale  # load goes up, replicas follow, load stops, replicas come back down
 make demo-netpol     # a pod in another namespace is blocked from the API and Redis
