@@ -102,3 +102,51 @@ tests:
       - eval_time: 70m
         alertname: ShopLatencyFastBurn
         exp_alerts: []
+
+  - name: Redis lost by every pod for over a minute fires ShopRedisDown
+    interval: 30s
+    input_series:
+      - series: 'shop_redis_up{app="shop-api", pod="shop-api-a"}'
+        values: '1 1 0 0 0 0 0 0'
+      - series: 'shop_redis_up{app="shop-api", pod="shop-api-b"}'
+        values: '1 1 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ShopRedisDown
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: ShopRedisDown
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: shop-api cannot reach Redis
+              description: "2 shop-api pod(s) have had no Redis connection for over a minute. Orders fail with 503; browsing still works."
+
+  - name: one pod without Redis is enough to fire
+    interval: 30s
+    input_series:
+      - series: 'shop_redis_up{app="shop-api", pod="shop-api-a"}'
+        values: '1 1 1 1 1 1 1 1'
+      - series: 'shop_redis_up{app="shop-api", pod="shop-api-b"}'
+        values: '1 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: ShopRedisDown
+        exp_alerts:
+          - exp_labels: { severity: critical }
+            exp_annotations:
+              summary: shop-api cannot reach Redis
+              description: "1 shop-api pod(s) have had no Redis connection for over a minute. Orders fail with 503; browsing still works."
+
+  - name: a 45 s Redis blip (shorter than the for window) does not fire
+    interval: 15s
+    input_series:
+      - series: 'shop_redis_up{app="shop-api", pod="shop-api-a"}'
+        values: '1 1 0 0 0 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: ShopRedisDown
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: ShopRedisDown
+        exp_alerts: []

@@ -108,3 +108,12 @@ groups:
         labels: { severity: critical }
         annotations:
           summary: No shop-api instance is being scraped successfully
+      # Postmortem 2026-11-18, action item 2. Readiness no longer depends on Redis (on purpose), so a Redis outage
+      # leaves every pod Ready and only shows up as failed orders. This alert names the cause directly.
+      - alert: ShopRedisDown
+        expr: count(shop_redis_up{app="shop-api"} == 0) > 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: shop-api cannot reach Redis
+          description: "{{ $value }} shop-api pod(s) have had no Redis connection for over a minute. Orders fail with 503; browsing still works."
