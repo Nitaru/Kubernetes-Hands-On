@@ -61,7 +61,8 @@ app.get("/api/compute", (req, res) => {
 });
 
 app.post("/api/orders", async (req, res) => {
-  const product = req.body.product;
+  const body = req.body || {};   // Express 5: no body means req.body is undefined (Express 4 gave {})
+  const product = body.product;
   if (!PRODUCTS[product]) {
     return res.status(400).json({ error: "unknown product" });
   }
@@ -76,7 +77,7 @@ app.post("/api/orders", async (req, res) => {
     return res.status(502).json({ error: "payment failed" });
   }
 
-  const quantity = Math.max(1, Number(req.body.quantity) || 1);
+  const quantity = Math.max(1, Number(body.quantity) || 1);
   const total = PRODUCTS[product] * quantity;
   const id = await redis.incr("orders:next_id");
   await redis.multi()

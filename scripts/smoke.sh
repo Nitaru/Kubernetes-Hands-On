@@ -33,6 +33,7 @@ check "GET /api/products -> 200"              retry http 200 -H 'Host: shop.loca
 check "POST /api/orders -> 201 (writes Redis)" bash -c "for i in 1 2 3 4 5 6; do c=\$(curl -s -m 8 -o /dev/null -w '%{http_code}' -XPOST -H 'content-type: application/json' -d '{\"product\":\"mouse\"}' $URL/api/orders); [[ \$c == 201 ]] && exit 0; done; exit 1"
 check "unknown host -> 404 from the ingress"  http 404 -H 'Host: nope.example' "$URL/"
 check "bad product -> 400"                    http 400 -XPOST -H 'content-type: application/json' -d '{"product":"nope"}' "$URL/api/orders"
+check "order with no body at all -> 400, not 500" http 400 -XPOST "$URL/api/orders"
 echo "network policies"
 check "4 NetworkPolicies applied"             bash -c '[[ $(kubectl -n shop get netpol --no-headers | wc -l) -eq 4 ]]'
 check "intruder namespace is blocked"         bash -c 'scripts/demo.sh netpol 2>&1 | grep -q "shop-api  blocked" && scripts/demo.sh netpol 2>&1 | grep -q "redis     blocked"'

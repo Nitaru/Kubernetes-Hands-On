@@ -39,8 +39,8 @@ Needs Docker, [kind](https://kind.sigs.k8s.io), `kubectl` and `helm`.
 
 ```sh
 make up        # cluster + Calico + Traefik + metrics-server + Prometheus/Grafana + app (about 9 minutes)
-make test      # 29 assertions against the live cluster
-make up-gitops # same platform, but Argo CD deploys the app from Git (see GitOps below); `make test` then runs 38
+make test      # 30 assertions against the live cluster
+make up-gitops # same platform, but Argo CD deploys the app from Git (see GitOps below); `make test` then runs 39
 make scan      # Trivy: image CVEs, Dockerfile and chart misconfigurations, secrets
 make grafana-password   # login for http://grafana.localtest.me:8080 (user: admin)
 make argocd-password    # login for http://argocd.localtest.me:8080 (GitOps mode only)
