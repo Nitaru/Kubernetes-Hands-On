@@ -5,6 +5,6 @@ FROM alpine:3.23
 RUN apk add --no-cache git git-daemon \
  && adduser -D -u 1000 git \
  && mkdir /repos && chown git /repos
-USER git
+USER 1000
 EXPOSE 9418
 ENTRYPOINT ["sh", "-c", "git init -q --bare -b main /repos/shop.git && exec git daemon --reuseaddr --base-path=/repos --export-all --enable=receive-pack --informative-errors /repos"]
