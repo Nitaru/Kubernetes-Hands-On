@@ -152,24 +152,27 @@ tests:
         exp_alerts: []
 
   - name: Traefik answers 503 with no pod behind it; only the ingress SLI sees it
+    # Evaluated once the whole 1 h window is inside the outage, so the ratio is the same at every evaluation. With a
+    # ratio that still changes each minute the expected value was flaky: promtool does not order rule groups at the same
+    # timestamp, so the alert can read the recording rule from one evaluation earlier (74.36% one run, 73.68% the next).
     interval: 1m
     input_series:
       # the app's own series stop: no pod exists to count anything
       - series: 'http_request_duration_seconds_count{app="shop-api", route="/api/products", status="200"}'
-        values: '0+100x10 _x60'
+        values: '0+100x10 _x80'
       - series: 'traefik_router_requests_total{router="shop-shop-shop-localtest-me@kubernetes", code="200"}'
-        values: '0+100x10 1000x60'
+        values: '0+100x10 1000x80'
       - series: 'traefik_router_requests_total{router="shop-shop-shop-localtest-me@kubernetes", code="503"}'
-        values: '0x10 0+100x60'
+        values: '0x10 0+100x80'
     alert_rule_test:
-      - eval_time: 40m
+      - eval_time: 80m
         alertname: ShopIngressAvailabilityFastBurn
         exp_alerts:
           - exp_labels: { severity: critical, slo: availability }
             exp_annotations:
               summary: Users of the shop are getting errors from the ingress, 14.4x the error budget
-              description: "74.36% of requests through Traefik failed over the last hour (SLO allows 1%)."   # 10 good minutes are still in the 1 h window
-      - eval_time: 40m
+              description: "100% of requests through Traefik failed over the last hour (SLO allows 1%)."
+      - eval_time: 80m
         alertname: ShopAvailabilityFastBurn
         exp_alerts: []
 
