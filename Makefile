@@ -1,4 +1,4 @@
-.PHONY: rollout-demo redis-restore-drill backup-drill loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
+.PHONY: rollout-demo redis-restore-drill backup-drill loadtest chaos chaos-podkill chaos-drain chaos-redis chaos-redisdown chaos-baddeploy chaos-netpol chaos-apidown chaos-redisalert up-gitops argocd-password demo-gitops demo-policy scan sbom grafana-password test-rules demo-slo up down status lint test demo-selfheal demo-rollout demo-autoscale demo-netpol demo-drain load
 
 up:                ## build the cluster, platform and app from scratch
 	scripts/up.sh
@@ -64,6 +64,10 @@ chaos-baddeploy:
 	scripts/chaos.sh baddeploy
 chaos-netpol:
 	scripts/chaos.sh netpol
+chaos-apidown:     ## every API pod gone for 3 min: the app's SLI against the ingress SLI (docs/alerting-followups.md)
+	scripts/chaos.sh apidown
+chaos-redisalert:  ## Redis gone for REDIS_DOWN_S (default 180) s, timing ShopRedisDown (docs/alerting-followups.md)
+	scripts/chaos.sh redisalert
 
 loadtest:          ## measure the autoscaling: predictions in docs/loadtest.md, needs a running cluster
 	scripts/loadtest.sh

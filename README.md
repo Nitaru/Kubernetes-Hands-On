@@ -132,7 +132,8 @@ deleting the default-deny policy was undone by Argo CD in about 1 s. One predict
 Postmortem, fix and re-measurement: [docs/postmortems](docs/postmortems/2026-11-18-redis-outage-takes-down-browsing.md).
 Two of its follow-ups were then built and measured ([docs/alerting-followups.md](docs/alerting-followups.md)): with every API pod gone for
 3 minutes, clients saw 99.3% errors while the app's own SLI counted **zero**, so availability is now also measured at the ingress;
-and a `ShopRedisDown` alert, which fired about 115 s into a 3-minute Redis outage (I predicted 60 to 105 s) and, by design, not for a 45 s one.
+and a `ShopRedisDown` alert, which fired about 115 s into a 3-minute Redis outage (I predicted 60 to 105 s) and, by design, not for a 45 s one
+(`make chaos-apidown`, `make chaos-redisalert`).
 Not covered: a multi-machine cluster, realistic network latency, load above about 20 requests a second, and most runs are a single run.
 
 ## Progressive delivery
@@ -225,7 +226,7 @@ app/              Node.js shop API (Prometheus metrics, /health, /ready, gracefu
 charts/shop/      the Helm chart (files/: SLO rules and Grafana dashboard)
 tests/            promtool unit tests for the SLO rules, manifests the admission policies must accept or reject
 kind/cluster.yaml 3-node cluster, default CNI disabled
-platform/         values for Traefik, metrics-server, kube-prometheus-stack, Kyverno and Argo CD; policies/; gitops/ (Application, in-cluster Git server); the load generator
+platform/         values for Traefik, metrics-server, kube-prometheus-stack, Kyverno and Argo CD; a ServiceMonitor for Traefik; policies/; gitops/ (Application, in-cluster Git server); the load generator
 scripts/          up.sh (build everything), demo.sh, smoke.sh, test-rules.sh, scan.sh; the experiments: chaos.sh (+ chaos-load.py,
                   chaos-chart.py), loadtest.sh, rollout-demo.sh, backup-drill.sh, redis-restore-drill.sh
 .github/          CI: helm lint, kubeconform (incl. CRD schemas), promtool, hadolint, Trivy scans and SBOM, then an end-to-end run on kind in both install modes (Helm and Argo CD)
