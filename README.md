@@ -194,6 +194,12 @@ dump, real data sizes, or anything other than Redis.
 - **My first backup said it succeeded and contained no data.** Velero's file-level backup skips `hostPath` volumes, which is what kind's storage creates, and still
   reports `Completed`; the restore then restored an empty disk. A second silent failure: Redis with append-only mode on ignores an RDB file and starts empty. Both
   are written up in the backup doc, and the drill now checks the data instead of trusting a status.
+- **The app cannot report its own outage, and neither could Traefik's obvious metric.** With every API pod gone, clients got
+  99.3% errors while the app's SLI counted zero. Traefik's per-service request counter missed them too: with no endpoints
+  left, its 503s are not attributed to the service. Only the per-router counter (off by default) sees them, so the ingress
+  SLI uses that. I had written the risk down before the run; it happened. ([details](docs/alerting-followups.md))
+- **Express 5 turns a request with no body into a 500.** `req.body` is `undefined` there, not `{}`. CI passed on the
+  Dependabot PR because every test sent a JSON body; a smoke check now sends none, and the handler copes with both versions.
 - **Readiness depended on Redis, so a Redis outage took product browsing down too.** Found by experiment 3b, fixed and re-measured
   (602 failed product requests before, 0 after); see the postmortem. My first test of it, a 3-second Redis restart, showed nothing
   because it was shorter than the probe window.
