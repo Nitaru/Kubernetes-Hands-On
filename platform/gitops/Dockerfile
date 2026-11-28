@@ -1,7 +1,7 @@
 # A tiny Git server for the cluster: `git daemon` over a bare repo, with push enabled.
 # It lets Argo CD watch a repository without GitHub being involved, so the whole GitOps loop
 # (commit, sync, self-heal) works offline and in CI. Unauthenticated on purpose: local use only.
-FROM alpine:3.23
+FROM alpine:3.24
 RUN apk add --no-cache git git-daemon \
  && adduser -D -u 1000 git \
  && mkdir /repos && chown git /repos
